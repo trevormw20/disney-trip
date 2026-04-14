@@ -651,7 +651,7 @@
     <span class="badge" id="hdr-season">🌡️ Season TBD</span>
     <span class="badge">📍 Orlando, FL</span>
     <span class="badge">⭐ 2 VIP Groups</span>
-    <span class="badge">💳 Hosted by Trevor</span>
+    <span class="badge">💳 Family Vacation 2029</span>
   </div>
 </header>
 
@@ -661,10 +661,13 @@
   <div class="print-bar">
     <div class="print-bar-label">📋 Full Itineraries</div>
     <button class="print-btn print-btn-org" onclick="printItinerary('trevor')">
-      🖨️ My Itinerary — Full Details (Trevor)
+      🖨️ Organizer Itinerary — Full Details
     </button>
     <button class="print-btn print-btn-fam" onclick="printItinerary('family')">
       🖨️ Group Itinerary — Everyone (No Prices)
+    </button>
+    <button class="print-btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;" onclick="printAgencyBrief()">
+      🖨️ Travel Agency Brief
     </button>
     <div class="print-bar-divider"></div>
     <div class="print-bar-label">🎟️ Per-Group Welcome Cards — Allowance &amp; Payment Info</div>
@@ -1429,7 +1432,7 @@
         <div class="sc-desc">All 20 MagicBand+ wristbands ordered and linked to Disney accounts before the trip. Hotel key, Lightning Lane, PhotoPass, and park entry — all on the wrist. <strong>Just tap and go.</strong>
           <div style="margin-top:.55rem;padding:.45rem .6rem;background:rgba(217,119,6,.08);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;font-size:.78rem;line-height:1.6;">
             <strong>⚠️ Pre-Arrival To-Do — Room Charging Setup:</strong><br>
-            At Disney check-in, enable <strong>room charging on every parent's MagicBand+</strong> — all linked to Trevor's master folio with <strong>no spending limit</strong>. Parents tap their band anywhere on Disney property (parks, restaurants, gift shops, hotel) and it goes straight to the room bill. Kids do not need charging enabled. Remind all parents this is for <em>their group's extras &amp; souvenirs only</em> — all meals, tickets, and necessities are already covered separately.
+            At Disney check-in, enable <strong>room charging on every parent's MagicBand+</strong> — all linked to the coordinator's master folio with <strong>no spending limit</strong>. Parents tap their band anywhere on Disney property (parks, restaurants, gift shops, hotel) and it goes straight to the room bill. Kids do not need charging enabled. Remind all parents this is for <em>their group's extras &amp; souvenirs only</em> — all meals, tickets, and necessities are already covered separately.
           </div>
         </div>
       </div>
@@ -1439,7 +1442,7 @@
       <div class="sc-icon">🗝️</div>
       <div>
         <div class="sc-title">Universal Room Key — Charging Enabled</div>
-        <div class="sc-desc">At Portofino Bay check-in, activate <strong>room charging on every parent's room key card</strong> — all tied to Trevor's master account with <strong>no spending limit</strong>. Works at all Universal Orlando restaurants, merchandise shops, and CityWalk on-property venues. Same principle as Disney: parents charge freely, Trevor settles at checkout. Kids' cards should have charging disabled at the front desk.
+        <div class="sc-desc">At Portofino Bay check-in, activate <strong>room charging on every parent's room key card</strong> — all tied to the coordinator's master account with <strong>no spending limit</strong>. Works at all Universal Orlando restaurants, merchandise shops, and CityWalk on-property venues. Same principle as Disney: parents charge freely, the coordinator settles at checkout. Kids' cards should have charging disabled at the front desk.
           <div style="margin-top:.55rem;padding:.45rem .6rem;background:rgba(217,119,6,.08);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;font-size:.78rem;line-height:1.6;">
             <strong>⚠️ Pre-Arrival To-Do:</strong> Call Portofino Bay before arrival to set up the master folio and confirm room charging can be activated at check-in for all rooms under the group booking. Ask for a group coordinator — large parties often get a dedicated contact.
           </div>
@@ -1712,6 +1715,12 @@ function changeDays(delta) {
 }
 
 // ── SET DAY TYPE ──────────────────────────────────────
+function setDayActivity2(index, val) {
+  days[index].activity2 = val;
+  renderDayGrid();
+  saveState();
+}
+
 function setDayType(index, type) {
   days[index].type = type;
   renderDayGrid();
@@ -1765,7 +1774,27 @@ function dayCardHTML(i) {
   } else if (d.type === 'travel_out') {
     sub = `<div class="dcb-split"><div class="track track-teal">MCO → SLC → home airports</div></div>`;
   } else if (d.type === 'hotel_move') {
-    sub = `<div class="dcb-split"><div class="track track-teal">Switch resort — Disney area ↔ Universal area</div></div>`;
+    const act2 = d.activity2 || '';
+    const act2Opts = [
+      ['','— add a half-day activity (optional) —'],
+      ['disney_springs','🛍️ Disney Springs — Shopping & Lunch'],
+      ['volcano_bay','🌊 Volcano Bay Water Park'],
+      ['icon_park','🎡 ICON Park — I-Drive'],
+      ['aquatica','💦 Aquatica Water Park'],
+      ['sea_life','🐠 Sea Life Aquarium + Madame Tussauds'],
+      ['kennedy','🚀 Kennedy Space Center'],
+      ['i_drive','🍕 I-Drive Lunch & Explore'],
+      ['pool','🏊 Pool Time at New Hotel'],
+      ['rest','😴 Rest & Unpack — Early Night'],
+    ].map(([v,l]) => '<option value="' + v + '"' + (act2 === v ? ' selected' : '') + '>' + l + '</option>').join('');
+    const act2Label = act2Opts ? {
+      disney_springs:'🛍️ Disney Springs', volcano_bay:'🌊 Volcano Bay',
+      icon_park:'🎡 ICON Park', aquatica:'💦 Aquatica', sea_life:'🐠 Sea Life + Tussauds',
+      kennedy:'🚀 Kennedy Space Center', i_drive:'🍕 I-Drive Explore',
+      pool:'🏊 Pool at New Hotel', rest:'😴 Rest Day',
+    }[act2] : '';
+    sub = `<div class="dcb-split"><div class="track track-teal">Switch resort — Disney area ↔ Universal area${act2Label ? '<br><span style="font-size:.68rem;opacity:.85">' + act2Label + '</span>' : ''}</div></div>
+    <select class="dcb-select" style="margin-top:.3rem;font-size:.67rem;border-color:#d97706;" onchange="setDayActivity2(${i},this.value)">${act2Opts}</select>`;
   }
 
   return `
@@ -2723,7 +2752,7 @@ function renderAllowance() {
     </div>
     <div style="font-size:.72rem;color:var(--muted);margin-top:.6rem;line-height:1.6;">
       💡 This covers gifts, souvenirs, candy, character meet purchases, arcade tokens, and any personal extras.
-      Necessities (food, tickets, transport, strollers, MagicBands) are <strong>paid separately</strong> by Trevor.
+      Necessities (food, tickets, transport, strollers, MagicBands) are <strong>coordinated and covered separately</strong>.
       Edit any group's daily amount above — totals update live.
     </div>
   `;
@@ -3740,7 +3769,7 @@ function renderSurveyResults() {
   let html = `<p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;">
     <strong>${n}</strong> response${n>1?'s':''} from:
     ${surveyResponses.map(r => '<strong>' + r.name + '</strong>').join(', ')}.
-    Trevor has final say on all planning — this is just input to help prioritize.
+    The coordinator has final say on all planning — this is just input to help prioritize.
   </p>`;
 
   // Day preferences
@@ -3875,6 +3904,258 @@ function renderSurveyResults() {
 loadSurveyResponses(); // load any previously imported responses
 
 // ════════════════════════════════
+// TRAVEL AGENCY BRIEF PRINT
+// ════════════════════════════════
+function printAgencyBrief() {
+  const disneyHotelData = DISNEY_HOTELS[hotelState.disney.selected];
+  const univHotelData   = UNIVERSAL_HOTELS[hotelState.universal.selected];
+  const b               = calcBudget();
+  const season          = SEASONS.find(s => s.id === selectedSeason);
+  const tripDateStr     = document.getElementById('trip-date-input')?.value || '2029-11-01';
+  const tripDate        = new Date(tripDateStr + 'T12:00:00');
+  const checkoutDisney  = new Date(tripDate);
+  const disneyNights    = b.disneyNights;
+  const univNights      = b.universalNights;
+  checkoutDisney.setDate(tripDate.getDate() + disneyNights);
+  const checkoutUniv    = new Date(checkoutDisney);
+  checkoutUniv.setDate(checkoutDisney.getDate() + univNights);
+  const fmtD = d => d.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
+  const f    = n => '$' + Math.round(n).toLocaleString();
+
+  // People breakdown
+  const adults   = TRIP_PEOPLE.filter(p => p.adult);
+  const kids     = TRIP_PEOPLE.filter(p => !p.adult);
+  const infants  = kids.filter(p => p.ageAtTrip <= 2);
+
+  // Group manifest rows
+  const manifestRows = [
+    ['Group 1','Trevor & Niki','Liam (8), Ian (5)','2 adults · 2 children'],
+    ['Group 2','Rick & Alicia','Sophie (10), Lainey (8), Owen (5), Mia (4)','2 adults · 4 children'],
+    ['Group 3','Mikey & Mila','Millie (19), Michelle (16)','2 adults · 2 young adults/teens'],
+    ['Group 4','Michael & Barbara','—','2 adults'],
+    ['Group 5','Eric & Carrie','—','2 adults'],
+    ['Group 6','Tyler','—','1 adult (+ possible partner)'],
+    ['Group 7','Tanner','—','1 adult (+ possible partner)'],
+  ].map(([g,adults,children,sum]) =>
+    `<tr><td>${g}</td><td>${adults}</td><td style="color:#6b7a8d">${children}</td><td>${sum}</td></tr>`
+  ).join('');
+
+  // Dining list
+  const diningList = [
+    ['Victoria & Albert\'s','Grand Floridian','Dinner · 2 adults · most prestigious on property — couples\' dinner night','Book immediately at 60-day window'],
+    ['California Grill','Contemporary Resort','Dinner · group TBD · 14th floor rooftop · MK fireworks sync','Book immediately at 60-day window'],
+    ['Topolino\'s Terrace','Riviera Resort','Dinner · group TBD · rooftop views','Book at 60-day window'],
+    ['Space 220','EPCOT','Dinner · group TBD · space station theme','Book at 60-day window'],
+    ['Tiffins','Animal Kingdom','Dinner · group TBD · signature AK restaurant','Book at 60-day window'],
+    ['Be Our Guest','Magic Kingdom','Dinner · all 20+ guests · Beast\'s Castle','Book at 60-day window — hardest to get'],
+    ['Hollywood Brown Derby','Hollywood Studios','Dinner · group TBD','Book at 60-day window'],
+    ['Character Dining (TBD)','TBD — Chef Mickey\'s / \'Ohana / Garden Grill preferred','Lunch or dinner · all 20+ guests · young children priority','Book at 60-day window'],
+    ['Mythos Restaurant','Islands of Adventure','Dinner · group TBD','Book at 90-day window (Universal)'],
+    ['Bigfire','Universal CityWalk','Dinner · group TBD','Book at 90-day window (Universal)'],
+  ].map(([r,loc,notes,priority]) =>
+    `<tr><td><strong>${r}</strong></td><td>${loc}</td><td style="font-size:.82em;color:#6b7a8d">${notes}</td><td style="font-size:.82em;color:#d97706">${priority}</td></tr>`
+  ).join('');
+
+  // Day schedule
+  const ACT2_LABEL = {
+    disney_springs:'+ Disney Springs', volcano_bay:'+ Volcano Bay', icon_park:'+ ICON Park',
+    aquatica:'+ Aquatica', sea_life:'+ Sea Life/Tussauds', kennedy:'+ Kennedy Space Center',
+    i_drive:'+ I-Drive Explore', pool:'+ Pool at New Hotel', rest:'+ Rest/Unpack',
+  };
+  const scheduleRows = days.map((d,i) => {
+    const t   = DAY_TYPES[d.type];
+    const dt  = new Date(tripDate); dt.setDate(tripDate.getDate() + i);
+    const act2 = d.activity2 ? (ACT2_LABEL[d.activity2] || '') : '';
+    const dinner = dinnerSelections[i] ? (() => {
+      const couples = {g1:'Group 1',g2:'Group 2',g3:'Group 3',g4:'Group 4',g5:'Group 5',g6:'Group 6',g7:'Group 7'};
+      const restId = dinnerRestaurants[i];
+      const rest = restId ? DINNER_RESTAURANTS.find(r=>r.id===restId) : null;
+      return (couples[dinnerSelections[i]]||'') + (rest ? ' @ ' + rest.name : ' — restaurant TBD');
+    })() : '';
+    return `<tr>
+      <td style="white-space:nowrap;font-weight:700">Day ${i+1}<br><span style="font-size:.75em;font-weight:400;color:#6b7a8d">${dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span></td>
+      <td>${t.icon} ${t.label}${act2 ? '<br><span style="font-size:.78em;color:#d97706">' + act2 + '</span>' : ''}</td>
+      <td style="font-size:.82em;color:#db2777">${dinner}</td>
+    </tr>`;
+  }).join('');
+
+  // Agency fee estimate
+  const agencyFeeMin = Math.round(b.total * 0.05);
+  const agencyFeeMax = Math.round(b.total * 0.10);
+  const agencyFlatLo = 1500;
+  const agencyFlatHi = 3000;
+  const agencyTipLo  = 300;
+  const agencyTipHi  = 750;
+
+  const CSS = `
+    body{font-family:'Segoe UI',Arial,sans-serif;max-width:960px;margin:0 auto;padding:2rem;color:#1e2a38;line-height:1.6;font-size:13px;}
+    h1{font-size:1.4rem;color:#7c3aed;border-bottom:3px solid #7c3aed;padding-bottom:.4rem;margin-bottom:.5rem;}
+    h2{font-size:.92rem;font-weight:700;color:#7c3aed;border-left:4px solid #7c3aed;padding-left:.65rem;margin:1.5rem 0 .55rem;}
+    h3{font-size:.84rem;font-weight:700;margin:.75rem 0 .3rem;color:#1e2a38;}
+    p{margin:.35rem 0;font-size:.85rem;}
+    table{width:100%;border-collapse:collapse;margin:.5rem 0;font-size:.83rem;}
+    th{background:#f3e8ff;padding:.4rem .7rem;text-align:left;border:1px solid #e9d5ff;font-weight:700;color:#6b21a8;}
+    td{padding:.35rem .7rem;border:1px solid #ede9fe;vertical-align:top;}
+    tr:nth-child(even) td{background:#faf5ff;}
+    .badge{display:inline-block;background:#7c3aed;color:#fff;font-size:.7rem;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.35rem;}
+    .warn{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:.55rem .9rem;font-size:.82rem;margin:.6rem 0;}
+    .fee-box{background:#f5f3ff;border:2px solid #c4b5fd;border-radius:10px;padding:.85rem 1.1rem;margin:.65rem 0;}
+    .fee-row{display:flex;justify-content:space-between;align-items:baseline;padding:.22rem 0;border-bottom:1px solid #ede9fe;font-size:.85rem;}
+    .fee-row:last-child{border:none;}
+    .fee-amt{font-weight:700;color:#7c3aed;}
+    .note-tag{font-size:.72rem;color:#6b7a8d;font-style:italic;}
+    @media print{button{display:none!important;}}`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<title>Florida 2029 — Travel Agency Brief</title>
+<style>${CSS}</style></head><body>
+<button onclick="window.print()" style="float:right;padding:.4rem 1rem;background:#7c3aed;color:#fff;border:none;border-radius:20px;font-weight:700;cursor:pointer;font-size:.8rem;">🖨️ Print</button>
+
+<h1>✈️ Florida Family Vacation 2029 — Travel Agency Brief</h1>
+<p><strong>Document type:</strong> Full trip planning brief for travel agency / vacation planner <span class="badge">CONFIDENTIAL</span></p>
+<p><strong>Season:</strong> ${season ? season.label + ' (' + season.dates + ')' : 'Fall 2029'} &nbsp;·&nbsp;
+   <strong>Arrival:</strong> ${fmtD(tripDate)} &nbsp;·&nbsp; <strong>Departure:</strong> ${fmtD(checkoutUniv)}</p>
+<p><strong>Total duration:</strong> ${totalDays} days &nbsp;·&nbsp;
+   <strong>Total travelers:</strong> ~22 people (${adults.length} adults · ${kids.length} children) across 7 family groups</p>
+
+<h2>👨‍👩‍👧‍👦 Group Manifest</h2>
+<table>
+  <tr><th>Group</th><th>Adults</th><th>Children (ages at trip)</th><th>Summary</th></tr>
+  ${manifestRows}
+</table>
+<div class="warn">⚠️ <strong>Special needs:</strong> 3–4 strollers needed (double + singles) · Baby/infant supplies for youngest children · Motion sickness medication availability · All car seats brought by families through airports · TSA PreCheck for ~14 adults (green card holder included — Philippines national, 18+ year resident, fully eligible)</div>
+
+<h2>🏨 Accommodations</h2>
+<h3>Disney World — ${disneyHotelData.name}</h3>
+<table>
+  <tr><th>Check-In</th><th>Check-Out</th><th>Nights</th><th>Est. Rate</th></tr>
+  <tr><td>${fmtD(tripDate)}</td><td>${fmtD(checkoutDisney)}</td><td>${disneyNights}</td><td>Est. ${f(b.disneyHotel)} total · ${f(Math.round(b.disneyHotel/Math.max(1,disneyNights)))}/night avg</td></tr>
+</table>
+<p><strong>Room configuration:</strong> 6 separate rooms — best available suite (Group 1), standard rooms (Groups 2+3), mid-tier rooms (Groups 4+5), shared/adjacent (Groups 6+7). Confirm connecting or adjacent rooms for families with young children.</p>
+<p><strong>Special requests:</strong> Cribs/pack-n-plays for youngest children · Ground floor or elevator access · Early check-in if arriving morning flight</p>
+
+<h3>Universal Orlando — ${univHotelData.name}</h3>
+<table>
+  <tr><th>Check-In</th><th>Check-Out</th><th>Nights</th><th>Est. Rate</th></tr>
+  <tr><td>${fmtD(checkoutDisney)}</td><td>${fmtD(checkoutUniv)}</td><td>${univNights}</td><td>Est. ${f(b.portofinoHotel)} total · ${f(Math.round(b.portofinoHotel/Math.max(1,univNights)))}/night avg</td></tr>
+</table>
+<p><strong>Room configuration:</strong> Same 6-room layout. Portofino Bay guests receive Universal Express Pass — confirm this perk is active for all rooms.</p>
+<p><strong>Special requests:</strong> Master billing folio for all rooms — room charging enabled for adult guests. Group coordinator settles full folio at checkout. Confirm master account setup with hotel group desk before arrival.</p>
+
+<h2>🎟️ Park Tickets</h2>
+<table>
+  <tr><th>Park</th><th>Ticket Type</th><th>Qty</th><th>Days</th><th>Est. Total</th></tr>
+  <tr><td>Disney World</td><td>Multi-Day Park Hopper (recommended) or Base tickets</td><td>20 people</td><td>${b.disneyDays} park days</td><td>${f(b.disneyTickets)}</td></tr>
+  <tr><td>Universal Orlando</td><td>Multi-Day (USF + IOA + Epic Universe)</td><td>20 people</td><td>${b.universalDays} park days</td><td>${f(b.universalTickets)}</td></tr>
+</table>
+<p><strong>Note:</strong> Disney resort guests receive Early Theme Park Entry (30 min early) every day — confirm this is active for all ticket types. Purchase tickets before trip to lock current pricing.</p>
+
+<h2>⭐ VIP Tour Experiences</h2>
+<table>
+  <tr><th>Experience</th><th>Details</th><th>Est. Cost</th></tr>
+  <tr><td><strong>Disney VIP Tour</strong></td><td>2 private guides · 7 hrs/day · ${b.disneyDays} Disney park days · Skip all standby lines · Guides coordinate group logistics</td><td>${f(extras.disney_vip)}</td></tr>
+  <tr><td><strong>Universal VIP Experience</strong></td><td>3 guide groups · ${b.universalDays} Universal days · VelociCoaster, Hagrid's, Epic Universe priority access</td><td>${f(extras.universal_vip)}</td></tr>
+</table>
+<p><strong>Disney VIP booking:</strong> Call (407) 560-4033. Book as early as possible — demand is high. Confirm guide split: Group 1+2+Flex (thrill rides) and Group 3+6+7+Flex (family/mixed). VIP cost is IN ADDITION to park tickets.</p>
+<p><strong>Universal VIP booking:</strong> Contact Universal group sales. Confirm Express Pass inclusion vs. separate purchase given Portofino Bay perk.</p>
+
+<h2>🚌 Transportation</h2>
+<table>
+  <tr><th>Transfer</th><th>Details</th><th>Est. Cost</th></tr>
+  <tr><td>MCO Airport → Disney Hotel (Arrival)</td><td>Private charter bus or 2× large vans · 22 people + luggage · ~45 min</td><td>Est. $400–$700</td></tr>
+  <tr><td>Disney Hotel → Universal Hotel (Mid-trip)</td><td>Same group transfer · luggage move · confirm Portofino Bay bell service for receiving bags</td><td>Est. $200–$400</td></tr>
+  <tr><td>Universal Hotel → MCO (Departure)</td><td>Private charter or 2× large vans · allow 3.5 hrs before flight · 22 people + luggage</td><td>Est. $400–$700</td></tr>
+</table>
+<p><strong>Note:</strong> No rental cars. All in-park transport via Disney/Universal resort systems (monorail, bus, Skyliner, water taxi). Ubers/Lyfts for any off-property evenings (spa, restaurants, arcades) — families responsible for their own car seats per FAA regulations.</p>
+
+<h2>🍽️ Dining Reservations Needed</h2>
+<p style="font-size:.8rem;color:#6b7a8d;">All Disney reservations open at 7:00 AM EST exactly 60 days before the dining date. Be ready at 6:55 AM with the app loaded. Universal opens 90 days prior.</p>
+<table>
+  <tr><th>Restaurant</th><th>Location</th><th>Notes / Party Size</th><th>Priority</th></tr>
+  ${diningList}
+</table>
+
+<h2>🌟 Special Experiences</h2>
+<table>
+  <tr><th>Experience</th><th>Details</th><th>Who</th><th>Est. Cost</th></tr>
+  <tr><td><strong>Bibbidi Bobbidi Boutique</strong></td><td>Princess makeover · Disney Springs or Cinderella Castle location · Book 60 days out</td><td>Sophie (10), Lainey (8), Mia (4) — keep as surprise</td><td>${f(extras.bibbidi)}</td></tr>
+  <tr><td><strong>Disney Memory Maker</strong></td><td>Unlimited PhotoPass photos + ride photos · entire group · 1 purchase covers all</td><td>All 22 guests · link to lead account</td><td>${f(extras.photopass)}</td></tr>
+  <tr><td><strong>Lightning Lane Multi Pass</strong></td><td>Purchase each Disney park day · also consider Individual LL for Tron, Guardians, Rise</td><td>All guests · buy at 7:00 AM each morning</td><td>Included in ticket/extras budget</td></tr>
+  <tr><td><strong>Ladies' Luxury Spa Day</strong></td><td>Full-day spa at Four Seasons / Waldorf Astoria / Ritz-Carlton Grande Lakes · massages, manicure, pedicure, facials, group lunch</td><td>All women 14+ (includes Millie & Michelle)</td><td>${f(extras.spa_day)}</td></tr>
+  <tr><td><strong>Guys' Night Out</strong></td><td>Premium arcade (Andretti / DEZERLAND / Main Event) + go-karts + group dinner</td><td>All men</td><td>${f(extras.boys_night)}</td></tr>
+  <tr><td><strong>Couples' Private Dinners</strong></td><td>One private dinner night per couple at a top restaurant · kids stay at resort</td><td>7 couples/groups · 7 separate dinner nights across the trip</td><td>Included in food budget</td></tr>
+</table>
+
+<h2>📦 Special Logistics</h2>
+<table>
+  <tr><th>Item</th><th>Details</th></tr>
+  <tr><td>Strollers</td><td>${tylerHasBaby ? '4 strollers' : '3 strollers'} — 1 double + singles · arranged for delivery to Disney hotel before arrival · donate at end of trip · Est. ${f(extras.strollers)}</td></tr>
+  <tr><td>Grocery / Supply Delivery</td><td>Sunscreen, snacks, water bottles, cooling towels, motion sickness meds, baby supplies · deliver to Disney hotel day before/day of arrival · Est. ${f(extras.grocery_delivery)}</td></tr>
+  <tr><td>MagicBand+</td><td>20 wristbands ordered in advance · pre-linked to My Disney Experience before arrival · hotel key + Lightning Lane + PhotoPass all on wrist</td></tr>
+  <tr><td>TSA PreCheck</td><td>~14 adults enrolling · $85/person · kids 12 & under free with enrolled parent · green card holders fully eligible · Est. ${f(extras.tsa_precheck)}</td></tr>
+  <tr><td>Travel Insurance</td><td>Trip cancellation + medical · ~$175/person × 20 people · Est. ${f(extras.travel_insurance)}</td></tr>
+</table>
+
+<h2>📅 Trip Day Schedule</h2>
+<table>
+  <tr><th>Day</th><th>Activity</th><th>Couples Dinner</th></tr>
+  ${scheduleRows}
+</table>
+
+<h2>💰 Budget Summary (Coordinator Reference)</h2>
+<div class="warn">⚠️ This document is for vacation planning agency use only. Budget figures are internal estimates.</div>
+<table>
+  <tr><th>Category</th><th>Estimate</th></tr>
+  <tr><td>Disney Hotel — ${disneyHotelData.name} (${disneyNights} nights)</td><td>${f(b.disneyHotel)}</td></tr>
+  <tr><td>Universal Hotel — ${univHotelData.name} (${univNights} nights)</td><td>${f(b.portofinoHotel)}</td></tr>
+  <tr><td>Hotel Tax (~12.5% FL)</td><td>${f(b.hotelTax)}</td></tr>
+  <tr><td>Disney Park Tickets (${b.disneyDays} days × 20 people)</td><td>${f(b.disneyTickets)}</td></tr>
+  <tr><td>Universal Park Tickets (${b.universalDays} days × 20 people)</td><td>${f(b.universalTickets)}</td></tr>
+  <tr><td>Flights (22 people · regional + SLC → MCO)</td><td>${f(b.flights)}</td></tr>
+  <tr><td>Food &amp; Dining + Tax</td><td>${f(b.food + b.diningTax)}</td></tr>
+  <tr><td>Disney VIP Tour</td><td>${f(extras.disney_vip)}</td></tr>
+  <tr><td>Universal VIP Experience</td><td>${f(extras.universal_vip)}</td></tr>
+  <tr><td>Transportation (shuttles, transfers)</td><td>${f(extras.transport)}</td></tr>
+  <tr><td>Special Events (Spa, Arcade, Bibbidi, Character Dining)</td><td>${f(extras.spa_day + extras.boys_night + extras.bibbidi + extras.character_dining)}</td></tr>
+  <tr><td>Shopping Allowance (all groups combined)</td><td>${f(extras.shopping)}</td></tr>
+  <tr><td>MagicBands, Strollers, Baby, Luggage, Parking</td><td>${f(extras.magic_bands + extras.strollers + extras.baby_extras + extras.luggage + extras.parking)}</td></tr>
+  <tr><td>Memory Maker, TSA PreCheck, Grocery Delivery</td><td>${f(extras.photopass + extras.tsa_precheck + extras.grocery_delivery)}</td></tr>
+  <tr><td>Travel Insurance</td><td>${f(extras.travel_insurance)}</td></tr>
+  <tr><td>Gratuities (guides, dining, hotel, transport, spa)</td><td>${f(extras.tips)}</td></tr>
+  <tr><td>Unforeseen Buffer</td><td>${f(extras.misc)}</td></tr>
+  <tr style="font-weight:700;background:#f3e8ff;"><td>TOTAL ESTIMATED TRIP COST</td><td style="color:#7c3aed;font-size:1.05em">${f(b.total)}</td></tr>
+</table>
+
+<h2>💼 Agency Fee &amp; Gratuity Estimate</h2>
+<div class="fee-box">
+  <p style="font-size:.8rem;color:#6b7a8d;margin-bottom:.6rem;">
+    Many Disney Authorized Vacation Planners (EarMarked agencies) receive commission directly from Disney at no cost to the client.
+    For a trip of this scope including Universal, a planning fee may apply. The ranges below are typical for a full-service complex multi-family booking.
+  </p>
+  <div class="fee-row"><span>Commission-based agency fee <span class="note-tag">(if Disney EarMarked — may be $0 to client)</span></span><span class="fee-amt">$0 – ${f(agencyFeeMin)}</span></div>
+  <div class="fee-row"><span>Flat planning fee <span class="note-tag">(for complex multi-family + Universal scope)</span></span><span class="fee-amt">${f(agencyFlatLo)} – ${f(agencyFlatHi)}</span></div>
+  <div class="fee-row"><span>Percentage-based fee <span class="note-tag">(5–10% of total if no commission)</span></span><span class="fee-amt">${f(agencyFeeMin)} – ${f(agencyFeeMax)}</span></div>
+  <div class="fee-row" style="border-top:2px solid #c4b5fd;margin-top:.3rem;padding-top:.4rem;">
+    <span><strong>Agent gratuity / thank-you</strong> <span class="note-tag">(discretionary · for exceptional service on a trip this size)</span></span>
+    <span class="fee-amt">${f(agencyTipLo)} – ${f(agencyTipHi)}</span>
+  </div>
+  <div class="fee-row" style="font-weight:700;">
+    <span>Recommended budget for agency services</span>
+    <span class="fee-amt">${f(agencyFlatLo + agencyTipLo)} – ${f(agencyFlatHi + agencyTipHi)} <span style="font-size:.78rem;font-weight:400">(if fee-based)</span></span>
+  </div>
+</div>
+<p style="font-size:.8rem;color:#6b7a8d;">Ask the agency upfront: "Do you charge a planning fee or are you commission-based?" A reputable Disney-specialist agency will be transparent. Agencies that handle both Disney and Universal typically charge a flat or percentage fee since Universal doesn't pay the same commissions.</p>
+
+<p style="text-align:center;margin-top:2rem;font-size:.85rem;color:#7c3aed;font-weight:700;">— Florida Family Vacation 2029 · Prepared for Travel Agency Planning Purposes —</p>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Please allow pop-ups to print the agency brief.'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+// ════════════════════════════════
 // PER-GROUP WELCOME CARD PRINT
 // ════════════════════════════════
 function printGroupCard(groupKey) {
@@ -3950,7 +4231,7 @@ function printGroupCard(groupKey) {
               📍 ${dinnerRest.location}<br>
               <span style="color:#6b7a8d">${dinnerRest.note}</span>
             </div>`
-         : `<p style="color:#6b7a8d;font-size:.85rem;">Restaurant to be confirmed — Trevor will share details before the trip.</p>`}`
+         : `<p style="color:#6b7a8d;font-size:.85rem;">Restaurant to be confirmed — details will be shared before the trip.</p>`}`
     : `<h2>💑 Your Private Dinner Night</h2>
        <p>Every couple gets one special private dinner night — just the two of you at a top restaurant while the kids stay at the resort with family. Your night will be confirmed before the trip. 🍷</p>`;
 
@@ -3993,18 +4274,20 @@ function printGroupCard(groupKey) {
 <div class="allow-box">
   <div>
     <div class="allow-big">${fmt(tripTotal)}</div>
-    <div class="allow-meta">Total for the trip</div>
+    <div class="allow-meta" style="font-weight:700;">Your full trip allowance — yours to spend!</div>
   </div>
-  <div style="font-size:.88rem;color:#166534;">
-    <strong>${fmt(daily)} / day</strong> &nbsp;×&nbsp; ${daysCount} days<br>
-    For: souvenirs, gifts, snacks, candy &amp; extras
+  <div style="font-size:.88rem;color:#166534;border-left:2px solid #86efac;padding-left:.85rem;">
+    Suggested pace: <strong>${fmt(daily)} / day</strong><br>
+    <span style="font-size:.78rem;opacity:.8;">That's ${daysCount} days × ${fmt(daily)} if you spread it evenly</span><br>
+    <span style="font-size:.78rem;">For: souvenirs, gifts, snacks, candy &amp; personal extras</span>
   </div>
 </div>
 <div class="rule-box">
-  📌 <strong>A few quick rules:</strong><br>
-  ✅ Unused daily money <strong>rolls over</strong> — save today, spend more tomorrow.<br>
-  🚫 The allowance is for the trip only — <strong>any balance left at checkout does not come home. Spend it on the trip!</strong><br>
-  ℹ️ All meals, tickets, hotel, and transportation are covered separately — this is purely your fun &amp; souvenir money.
+  📌 <strong>How your allowance works:</strong><br>
+  💰 You receive the <strong>full ${fmt(tripTotal)}</strong> upfront — it's yours to spend however you like across the trip.<br>
+  📅 The ${fmt(daily)}/day figure is just a <em>suggested daily pace</em> to help you budget if you want to — you are not limited to that amount per day.<br>
+  🚫 This is a trip allowance — <strong>any balance left at checkout stays on the trip account and does not come home.</strong><br>
+  ℹ️ All meals, tickets, hotel, and transportation are handled separately — this is purely your fun &amp; souvenir money.
 </div>
 
 <h2>💳 How to Pay — No Cash Needed</h2>
@@ -4012,7 +4295,7 @@ function printGroupCard(groupKey) {
   <div class="pay-row">
     <span class="pay-icon">⌚</span>
     <div><strong>At Disney — Tap Your MagicBand+</strong><br>
-    Your MagicBand wristband is set up for room charging. Tap it at any Disney park shop, restaurant, hotel gift shop, or merchandise cart. It goes directly to the room account — Trevor settles the bill at checkout. No wallet needed.</div>
+    Your MagicBand wristband is set up for room charging. Tap it at any Disney park shop, restaurant, hotel gift shop, or merchandise cart. It goes directly to the room account — settled at checkout. No wallet needed.</div>
   </div>
   <div class="pay-row">
     <span class="pay-icon">🗝️</span>
@@ -4022,7 +4305,7 @@ function printGroupCard(groupKey) {
   <div class="pay-row">
     <span class="pay-icon">💵</span>
     <div><strong>Off-Property</strong><br>
-    For anything not on Disney or Universal property, bring your own card or cash. Trevor will coordinate for any planned off-property outings (private dinners, spa, etc.) — those are handled directly.</div>
+    For anything not on Disney or Universal property, bring your own card or cash. Any planned off-property outings (private dinners, spa, etc.) are pre-arranged and handled directly — no out-of-pocket needed.</div>
   </div>
 </div>
 <p style="font-size:.78rem;color:#6b7a8d;">⚠️ Room charging is set up for parents only. Kids' bands and cards are not enabled for purchases — parents manage their group's spending.</p>
@@ -4049,7 +4332,7 @@ ${specialNotes.length ? `<h2>⭐ Special Plans for Your Group</h2><div class="sp
 </table>
 
 <h2>📱 Staying in Touch</h2>
-<p>Keep your phone charged every morning — all communication is through our phones.${g.kids ? ' Each morning, write <strong>Trevor\'s cell number on your kids\' wrists</strong> in Sharpie — just in case they get separated in the parks. Tracker tags will also be set up on each child.' : ''} If anyone gets separated at a park, the meeting point is always <strong>park entrance / Guest Services</strong>.</p>
+<p>Keep your phone charged every morning — all communication is through our phones.${g.kids ? ' Each morning, write the <strong>coordinator\'s cell number on your kids\' wrists</strong> in Sharpie — just in case they get separated in the parks. Tracker tags will also be set up on each child.' : ''} If anyone gets separated at a park, the meeting point is always <strong>park entrance / Guest Services</strong>.</p>
 
 <p style="text-align:center;margin-top:2rem;font-size:1rem;color:${g.color};font-weight:700;">🌴 We cannot wait to make memories with you. See you in Florida! 🌴</p>
 </body></html>`;
