@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Florida 2029 — Trip Preference Survey</title>
+  <style>
+    :root {
+      --blue:#1a6fc4; --teal:#0d9488; --gold:#d97706; --green:#059669;
+      --bg:#f0f4f8; --card:#fff; --border:#dce3ec; --text:#1e2a38; --muted:#6b7a8d;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* ── Header ── */
+    header {
+      background:linear-gradient(135deg,#1a3a5c 0%,#1a6fc4 60%,#0d9488 100%);
+      color:#fff; padding:1.75rem 1.25rem 1.5rem; text-align:center;
+    }
+    header h1 { font-size:1.6rem; font-weight:700; }
+    header p  { font-size:.88rem; opacity:.88; margin-top:.4rem; }
+
+    /* ── Progress bar ── */
+    .progress-bar { background:rgba(255,255,255,.2); height:4px; margin-top:1rem; border-radius:2px; }
+    .progress-fill { height:100%; border-radius:2px; background:#fff; transition:width .35s ease; }
+
+    /* ── Step label ── */
+    .step-label { font-size:.78rem; opacity:.8; margin-top:.45rem; }
+
+    /* ── Layout ── */
+    main { max-width:680px; margin:0 auto; padding:1.5rem 1rem 3rem; }
+
+    /* ── Step panels ── */
+    .step { display:none; }
+    .step.active { display:block; }
+
+    /* ── Section heading ── */
+    .sec-head { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.8px; margin:1.75rem 0 .75rem; display:flex; align-items:center; gap:.5rem; }
+    .sec-head::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* ── Card ── */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px;
+      padding:1.1rem 1.25rem; margin-bottom:.85rem; }
+
+    /* ── Form elements ── */
+    label { font-size:.82rem; font-weight:600; display:block; margin-bottom:.35rem; }
+    select, textarea, input[type=text] {
+      width:100%; padding:.55rem .75rem; border:1.5px solid var(--border); border-radius:8px;
+      font-size:.9rem; font-family:inherit; color:var(--text); background:#fff;
+      transition:border-color .15s;
+    }
+    select:focus, textarea:focus, input[type=text]:focus {
+      outline:none; border-color:var(--blue);
+    }
+    textarea { resize:vertical; min-height:80px; }
+
+    /* ── Star rating ── */
+    .star-row { display:flex; gap:.5rem; margin-top:.3rem; flex-wrap:wrap; }
+    .star-btn {
+      flex:1; min-width:52px; padding:.45rem .2rem; border:1.5px solid var(--border);
+      border-radius:8px; background:#f8fafc; cursor:pointer; font-size:.82rem; font-weight:700;
+      text-align:center; transition:all .15s; color:var(--muted); line-height:1.3;
+    }
+    .star-btn.sel { border-color:currentColor; background:currentColor; color:#fff !important; }
+    .star-btn:hover { border-color:var(--blue); }
+
+    /* ── Park block ── */
+    .park-block { background:var(--card); border:2px solid var(--border); border-radius:14px;
+      margin-bottom:1.1rem; overflow:hidden; }
+    .park-header { display:flex; align-items:center; gap:.7rem; padding:.75rem 1rem;
+      cursor:pointer; user-select:none; }
+    .park-header:hover { background:#f8fafc; }
+    .park-icon { font-size:1.4rem; flex-shrink:0; }
+    .park-title { font-weight:700; font-size:.95rem; flex:1; }
+    .park-toggle { font-size:.8rem; color:var(--muted); transition:transform .2s; }
+    .park-toggle.open { transform:rotate(180deg); }
+    .park-rides { padding:.25rem .75rem .85rem; display:none; }
+    .park-rides.open { display:block; }
+    .park-excite { padding:.15rem 1rem .6rem; border-top:1px solid var(--border); margin:0 -.1px; background:#f8fafc; }
+    .park-excite label { font-size:.75rem; color:var(--muted); margin-bottom:.3rem; margin-top:.45rem; }
+
+    /* ── Ride checkbox ── */
+    .ride-item {
+      display:flex; align-items:flex-start; gap:.65rem; padding:.5rem .35rem;
+      border-bottom:1px solid var(--border); cursor:pointer;
+    }
+    .ride-item:last-child { border-bottom:none; }
+    .ride-item input[type=checkbox] { margin-top:.22rem; width:16px; height:16px; flex-shrink:0; accent-color:var(--blue); cursor:pointer; }
+    .ride-name { font-size:.86rem; font-weight:600; }
+    .ride-meta { font-size:.73rem; color:var(--muted); margin-top:.1rem; line-height:1.4; }
+    .ride-type { display:inline-block; font-size:.66rem; padding:.05rem .35rem; border-radius:4px;
+      background:#e0f2fe; color:#075985; font-weight:700; margin-right:.3rem; }
+    .ride-ht { font-size:.68rem; color:var(--muted); }
+    .intensity-dots { display:inline-flex; gap:2px; vertical-align:middle; margin-left:.25rem; }
+    .dot { width:6px; height:6px; border-radius:50%; background:#d1d5db; }
+    .dot.on { background:#f59e0b; }
+
+    /* ── Day preference chips ── */
+    .chip-row { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.4rem; }
+    .chip { padding:.38rem .85rem; border-radius:20px; border:1.5px solid var(--border);
+      font-size:.8rem; font-weight:600; cursor:pointer; background:#f8fafc;
+      transition:all .15s; color:var(--muted); }
+    .chip.sel { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+    /* ── Nav buttons ── */
+    .nav-row { display:flex; gap:.75rem; margin-top:2rem; }
+    .btn { flex:1; padding:.7rem 1rem; border-radius:24px; font-size:.88rem; font-weight:700;
+      cursor:pointer; border:none; transition:opacity .15s; }
+    .btn:hover { opacity:.87; }
+    .btn-back { background:#e5e7eb; color:#374151; }
+    .btn-next { background:linear-gradient(135deg,var(--blue),var(--teal)); color:#fff; }
+    .btn-submit { background:linear-gradient(135deg,#15803d,#059669); color:#fff; }
+
+    /* ── Submit panel ── */
+    .submit-panel { background:var(--card); border:1px solid var(--border); border-radius:14px;
+      padding:1.25rem 1.4rem; margin-top:1rem; }
+    .submit-panel h3 { font-size:1rem; margin-bottom:.6rem; }
+    .json-box { background:#1e2a38; color:#86efac; border-radius:8px; padding:.75rem .9rem;
+      font-family:monospace; font-size:.72rem; line-height:1.6; white-space:pre-wrap;
+      word-break:break-all; max-height:180px; overflow-y:auto; margin:.65rem 0; }
+    .action-btns { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.85rem; }
+    .act-btn { flex:1; min-width:140px; padding:.55rem 1rem; border:none; border-radius:20px;
+      font-size:.82rem; font-weight:700; cursor:pointer; transition:opacity .15s; }
+    .act-btn:hover { opacity:.85; }
+    .act-copy  { background:#374151; color:#fff; }
+    .act-email { background:linear-gradient(135deg,#1a6fc4,#0d9488); color:#fff; }
+    .copy-ok   { color:#059669; font-size:.78rem; margin-top:.4rem; display:none; }
+
+    /* ── Validation ── */
+    .err { color:#dc2626; font-size:.78rem; margin-top:.3rem; display:none; }
+    .field-err select, .field-err input { border-color:#dc2626; }
+
+    @media (max-width:480px) {
+      header h1 { font-size:1.3rem; }
+      .star-btn { font-size:.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌴 Florida 2029 — Family Survey</h1>
+  <p>Help Trevor plan the perfect trip! Tell us what you're excited about.<br>Takes about 5 minutes.</p>
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width:25%"></div></div>
+  <div class="step-label" id="step-label">Step 1 of 4</div>
+</header>
+
+<main>
+
+  <!-- ════ STEP 1: Who are you ════ -->
+  <div class="step active" id="step-1">
+    <div class="sec-head">👋 About You</div>
+    <div class="card">
+      <label for="sel-group">Which family group are you?</label>
+      <select id="sel-group" onchange="updateNameList()">
+        <option value="">— select your group —</option>
+        <option value="g1">Group 1 — Trevor &amp; Niki (+ Liam &amp; Ian)</option>
+        <option value="g2">Group 2 — Rick &amp; Alicia (+ Sophie, Lainey, Owen, Mia)</option>
+        <option value="g3">Group 3 — Mikey &amp; Mila (+ Millie &amp; Michelle)</option>
+        <option value="g4">Group 4 — Michael &amp; Barbara</option>
+        <option value="g5">Group 5 — Eric &amp; Carrie</option>
+        <option value="g6">Group 6 — Tyler</option>
+        <option value="g7">Group 7 — Tanner</option>
+      </select>
+      <div class="err" id="err-group">Please select your group.</div>
+    </div>
+    <div class="card" id="name-card" style="display:none;">
+      <label for="sel-name">Who's filling this out?</label>
+      <select id="sel-name">
+        <option value="">— select your name —</option>
+      </select>
+      <div class="err" id="err-name">Please select your name.</div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-next" onclick="goStep(2)">Next — Park Preferences →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 2: Park excitement ════ -->
+  <div class="step" id="step-2">
+    <div class="sec-head">🎢 Park Excitement</div>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:1rem;line-height:1.6;">
+      Rate how excited you are for each park. This helps Trevor decide which parks to prioritize
+      and how many days to spend at each.
+    </p>
+    <div id="park-ratings"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-next" onclick="goStep(3)">Next — Must-Do Rides →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 3: Rides ════ -->
+  <div class="step" id="step-3">
+    <div class="sec-head">🎡 Must-Do Rides</div>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:1rem;line-height:1.6;">
+      Check every ride you want to make sure to do. Don't worry about height limits —
+      Trevor's VIP guides will sort out who can ride what. Check anything that looks fun!
+    </p>
+    <div id="ride-list"></div>
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-next" onclick="goStep(4)">Next — Final Questions →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 4: Misc preferences ════ -->
+  <div class="step" id="step-4">
+    <div class="sec-head">☀️ Day Preferences</div>
+    <div class="card">
+      <label>Which types of days sound most appealing? <span style="font-weight:400;color:var(--muted)">(pick all that apply)</span></label>
+      <div class="chip-row" id="day-prefs">
+        <div class="chip" data-val="park_open" onclick="toggleChip(this)">🌅 Rope Drop (arrive early)</div>
+        <div class="chip" data-val="pool"      onclick="toggleChip(this)">🏊 Pool / Resort Day</div>
+        <div class="chip" data-val="rest"      onclick="toggleChip(this)">😴 Rest / Slow Day</div>
+        <div class="chip" data-val="shopping"  onclick="toggleChip(this)">🛍️ Disney Springs Shopping</div>
+        <div class="chip" data-val="late_stay" onclick="toggleChip(this)">🌙 Stay for Nighttime Show</div>
+        <div class="chip" data-val="character" onclick="toggleChip(this)">🐭 Character Meet &amp; Greets</div>
+        <div class="chip" data-val="food_tour" onclick="toggleChip(this)">🍽️ EPCOT Food &amp; Culture</div>
+      </div>
+    </div>
+
+    <div class="sec-head">⭐ Special Events</div>
+    <div class="card">
+      <label>Which special activities are you most excited about? <span style="font-weight:400;color:var(--muted)">(pick all that apply)</span></label>
+      <div class="chip-row" id="special-prefs">
+        <div class="chip" data-val="couples_dinner" onclick="toggleChip(this)">💑 Couples' Private Dinner</div>
+        <div class="chip" data-val="spa"            onclick="toggleChip(this)">💆 Ladies' Spa Day</div>
+        <div class="chip" data-val="arcade"         onclick="toggleChip(this)">🕹️ Guys' Arcade Night</div>
+        <div class="chip" data-val="fireworks"      onclick="toggleChip(this)">🎆 Fireworks &amp; Night Shows</div>
+        <div class="chip" data-val="character_meal" onclick="toggleChip(this)">🍽️ Character Dining</div>
+        <div class="chip" data-val="pool_party"     onclick="toggleChip(this)">🌊 Pool &amp; Splash Time</div>
+      </div>
+    </div>
+
+    <div class="sec-head">📝 Anything Else?</div>
+    <div class="card">
+      <label for="notes">Any must-dos, worries, dietary needs, mobility needs, or notes for Trevor?</label>
+      <textarea id="notes" placeholder="e.g. Owen is terrified of anything dark, Sophie really wants to meet Cinderella, we need halal food options…"></textarea>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-back" onclick="goStep(3)">← Back</button>
+      <button class="btn btn-submit" onclick="buildSubmit()">✅ Build My Response</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 5: Submit ════ -->
+  <div class="step" id="step-5">
+    <div class="sec-head">🎉 All Done!</div>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;line-height:1.6;">
+      Your preferences are ready. Use one of the options below to send them to Trevor.
+      The easiest is the blue email button — it opens your email app with everything pre-filled.
+      If that doesn't work, use "Copy" and paste it into a text or email to Trevor.
+    </p>
+    <div class="submit-panel">
+      <h3>📋 Your Response</h3>
+      <div class="json-box" id="json-out"></div>
+      <div class="action-btns">
+        <button class="act-btn act-copy" onclick="copyJSON()">📋 Copy to Clipboard</button>
+        <button class="act-btn act-email" id="email-btn">📧 Send Email to Trevor</button>
+      </div>
+      <div class="copy-ok" id="copy-ok">✅ Copied! Paste it into a text or email to Trevor.</div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:1.1rem;line-height:1.6;text-align:center;">
+      Questions? Text Trevor directly. Thanks for filling this out — it really helps! 🌴
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const GROUPS = {
+  g1: ['Trevor','Niki','Liam','Ian'],
+  g2: ['Rick','Alicia','Sophie','Lainey','Owen','Mia'],
+  g3: ['Mikey','Mila','Millie','Michelle'],
+  g4: ['Michael','Barbara'],
+  g5: ['Eric','Carrie'],
+  g6: ['Tyler'],
+  g7: ['Tanner'],
+};
+
+const PARKS = [
+  { id:'mk',   name:'Magic Kingdom',         icon:'🏰', color:'#1a6fc4',
+    desc:'Cinderella Castle, classic Disney magic, best for all ages', rides:[
+    { id:'tron',        name:'TRON Lightcycle Run',             type:'Coaster',    i:4, ht:40, desc:'High-speed motorcycle launch coaster through neon grids' },
+    { id:'seven_dwarfs',name:'Seven Dwarfs Mine Train',         type:'Coaster',    i:3, ht:38, desc:'Family mine car coaster through the diamond mine' },
+    { id:'big_thunder', name:'Big Thunder Mountain',            type:'Coaster',    i:3, ht:40, desc:'Runaway mine train through haunted Western desert' },
+    { id:'space_mtn',   name:'Space Mountain',                  type:'Coaster',    i:4, ht:44, desc:'Indoor coaster through outer space in complete darkness' },
+    { id:'barnstormer', name:'The Barnstormer',                 type:'Coaster',    i:2, ht:35, desc:'Small kid coaster — perfect first roller coaster' },
+    { id:'tianas',      name:"Tiana's Bayou Adventure",         type:'Water Ride', i:3, ht:40, desc:'Log flume with a big drop — you WILL get wet' },
+    { id:'haunted',     name:'Haunted Mansion',                 type:'Dark Ride',  i:2, ht:0,  desc:'Classic spooky ride — dark but mild, fun for all ages' },
+    { id:'pirates',     name:'Pirates of the Caribbean',        type:'Boat Ride',  i:1, ht:0,  desc:'Slow boat through pirate scenes — beloved classic' },
+    { id:'peter_pan',   name:"Peter Pan's Flight",              type:'Dark Ride',  i:1, ht:0,  desc:"Fly over London in a pirate ship — always long waits" },
+    { id:'buzz',        name:'Buzz Lightyear Space Ranger',     type:'Shooter',    i:1, ht:0,  desc:'Interactive laser shooter — competitive family fun' },
+    { id:'small_world', name:"It's a Small World",              type:'Boat Ride',  i:1, ht:0,  desc:'Slow boat through singing dolls — cool and air conditioned' },
+    { id:'dumbo',       name:'Dumbo the Flying Elephant',       type:'Spinner',    i:1, ht:0,  desc:'Classic gentle spinner — no height requirement' },
+    { id:'winnie',      name:"Winnie the Pooh",                 type:'Dark Ride',  i:1, ht:0,  desc:'Gentle ride through the Hundred Acre Wood' },
+    { id:'speedway',    name:'Tomorrowland Speedway',           type:'Drive',      i:1, ht:32, desc:'Gas-powered cars on a track — kids love driving' },
+  ]},
+  { id:'epcot', name:'EPCOT',                 icon:'🌍', color:'#0d9488',
+    desc:'World cultures, space, food & the most unique Disney experiences', rides:[
+    { id:'guardians',  name:'Guardians: Cosmic Rewind',         type:'Coaster',    i:4, ht:42, desc:'Reverse-launch indoor coaster synced to a song — one of the best' },
+    { id:'test_track', name:'Test Track',                       type:'Simulator',  i:3, ht:40, desc:'Design and crash-test a car — speeds up to 65 mph' },
+    { id:'soarin',     name:"Soarin' Around the World",         type:'Simulator',  i:2, ht:40, desc:'Hang gliding film over world landmarks — gentle and beautiful' },
+    { id:'frozen',     name:'Frozen Ever After',                type:'Boat Ride',  i:2, ht:0,  desc:'Slow boat through the world of Frozen — all ages' },
+    { id:'remy',       name:"Remy's Ratatouille Adventure",     type:'Dark Ride',  i:2, ht:0,  desc:"Shrink to mouse-size and scurry through Gusteau's kitchen" },
+    { id:'mission_o',  name:'Mission: SPACE (Orange)',          type:'Simulator',  i:5, ht:44, desc:'Full centrifuge spin — simulates Mars mission. Very intense.' },
+    { id:'mission_g',  name:'Mission: SPACE (Green)',           type:'Simulator',  i:2, ht:40, desc:'Earth orbit version — no spinning, gentle for everyone' },
+  ]},
+  { id:'hs',   name:'Hollywood Studios',      icon:'🎬', color:'#7c3aed',
+    desc:'Star Wars, Toy Story, Tower of Terror — the thrill park', rides:[
+    { id:'rise',      name:'Star Wars: Rise of the Resistance', type:'Dark Ride',  i:3, ht:40, desc:'Most immersive Disney ride — epic 20-min Star Wars experience' },
+    { id:'falcon',    name:'Millennium Falcon: Smugglers Run',  type:'Simulator',  i:3, ht:38, desc:'Pilot the Millennium Falcon — interactive pilot/gunner roles' },
+    { id:'slinky',    name:'Slinky Dog Dash',                   type:'Coaster',    i:2, ht:38, desc:"Fun family coaster through Andy's backyard" },
+    { id:'tower',     name:'Tower of Terror',                   type:'Drop',       i:4, ht:40, desc:'Haunted elevator drops 13 stories — random each ride' },
+    { id:'rock_n',    name:"Rock 'n' Roller Coaster",           type:'Coaster',    i:5, ht:48, desc:'Indoor launch coaster with inversions — 0 to 60 in 2.8 sec' },
+    { id:'runaway',   name:"Mickey & Minnie's Runaway Railway", type:'Dark Ride',  i:2, ht:0,  desc:"Cartoon ride through Mickey's world — no height req" },
+    { id:'toy_story', name:'Toy Story Mania!',                  type:'Shooter',    i:1, ht:0,  desc:'4D interactive midway games — competitive for all ages' },
+  ]},
+  { id:'ak',   name:'Animal Kingdom',         icon:'🦁', color:'#059669',
+    desc:'Pandora, real safaris, Expedition Everest', rides:[
+    { id:'fop',       name:'Avatar: Flight of Passage',         type:'Simulator',  i:4, ht:44, desc:'Ride a banshee over Pandora — most-requested Disney ride' },
+    { id:'navi',      name:"Na'vi River Journey",               type:'Boat Ride',  i:1, ht:0,  desc:'Gentle float through bioluminescent Pandora — all ages' },
+    { id:'everest',   name:'Expedition Everest',                type:'Coaster',    i:5, ht:44, desc:'Backwards Yeti coaster through the Himalayas — very thrilling' },
+    { id:'dinosaur',  name:'DINOSAUR',                          type:'Dark Ride',  i:4, ht:40, desc:'Intense jolting dark ride through the dinosaur age' },
+    { id:'kali',      name:'Kali River Rapids',                 type:'Water Ride', i:3, ht:38, desc:'Whitewater raft ride — you WILL get soaked' },
+    { id:'safari',    name:'Kilimanjaro Safaris',               type:'Safari',     i:1, ht:0,  desc:'Open truck safari through real African animal habitats' },
+    { id:'triceratop',name:'TriceraTop Spin',                   type:'Spinner',    i:1, ht:0,  desc:'Dino spinner — Dumbo style, great for little ones' },
+  ]},
+  { id:'usf',  name:'Universal Studios FL',   icon:'🎥', color:'#dc2626',
+    desc:'Mummy, Minions, Hollywood Rip Ride Rockit', rides:[
+    { id:'rockit',      name:'Hollywood Rip Ride Rockit',       type:'Coaster',    i:5, ht:51, desc:'Choose your soundtrack on this vertical-launch coaster' },
+    { id:'mummy',       name:'Revenge of the Mummy',            type:'Coaster',    i:5, ht:48, desc:'Indoor coaster with fire, darkness, and surprise reverse launches' },
+    { id:'transformers',name:'Transformers: The Ride',          type:'Simulator',  i:3, ht:40, desc:'3D simulator battle through a Transformers world' },
+    { id:'mib',         name:'Men in Black: Alien Attack',      type:'Shooter',    i:2, ht:42, desc:'Interactive spinner — shoot aliens through NYC streets' },
+    { id:'minion',      name:'Despicable Me: Minion Mayhem',    type:'Simulator',  i:2, ht:40, desc:'Get shrunk and turned into a minion — popular family ride' },
+    { id:'et',          name:'E.T. Adventure',                  type:'Dark Ride',  i:1, ht:0,  desc:'Classic Spielberg ride — fly with E.T. on bicycles' },
+  ]},
+  { id:'ioa',  name:'Islands of Adventure',   icon:'🗺️', color:'#d97706',
+    desc:'Harry Potter, VelociCoaster, Hulk — the thrill park', rides:[
+    { id:'veloci',    name:'Jurassic World VelociCoaster',       type:'Coaster',    i:5, ht:51, desc:'Top-hat inversions at 70 mph — best coaster in Florida' },
+    { id:'hagrids',   name:"Hagrid's Magical Creatures",         type:'Coaster',    i:4, ht:48, desc:'Half motorbike, half coaster through the Forbidden Forest' },
+    { id:'forbidden', name:'Forbidden Journey (Harry Potter)',   type:'Simulator',  i:4, ht:48, desc:'Fly through Hogwarts — dementor sequence is very intense' },
+    { id:'hippogriff',name:'Flight of the Hippogriff',          type:'Coaster',    i:3, ht:36, desc:'Short outdoor family coaster near Hogwarts castle' },
+    { id:'hulk',      name:'Incredible Hulk Coaster',           type:'Coaster',    i:5, ht:54, desc:'Launch coaster with multiple inversions through Marvel Island' },
+    { id:'doom',      name:"Doctor Doom's Fearfall",            type:'Drop',       i:5, ht:52, desc:'Compressed air shoots you 185 ft up instantly — no warning' },
+    { id:'spiderman', name:'Amazing Adventures of Spider-Man',  type:'Simulator',  i:3, ht:40, desc:'3D simulator classic — still one of the best in the park' },
+    { id:'jurassic_r',name:'Jurassic Park River Adventure',     type:'Water Ride', i:3, ht:42, desc:'Big drop log flume — escape from raptors and T-Rex' },
+    { id:'kong',      name:'Skull Island: Reign of Kong',       type:'Dark Ride',  i:3, ht:36, desc:"Massive open-air truck ride through Kong's island" },
+    { id:'one_fish',  name:'One Fish Two Fish (Seuss)',          type:'Spinner',    i:1, ht:0,  desc:'Gentle water spinner in Seuss Landing — kids love it' },
+  ]},
+  { id:'eu',   name:'Epic Universe (NEW 2025)', icon:'🌌', color:'#9333ea',
+    desc:'Brand new park — Mario Kart, Harry Potter Ministry of Magic, How to Train Your Dragon', rides:[
+    { id:'dragon_racer',name:"Dragon Racer's Rally (HTTYD)",    type:'Coaster',    i:3, ht:40, desc:'Family coaster through How to Train Your Dragon world' },
+    { id:'wing_glider', name:"Hiccup's Wing Gliders (HTTYD)",   type:'Spinner',    i:2, ht:0,  desc:'Gentle family spinner over Berk with Toothless' },
+    { id:'mario_kart',  name:"Mario Kart: Bowser's Challenge",  type:'Simulator',  i:3, ht:40, desc:'AR kart racing — compete for stars through Mario levels' },
+    { id:'dk_mine',     name:"Mine-Cart Madness (Donkey Kong)", type:'Coaster',    i:4, ht:42, desc:'Trackless mine cart coaster — unpredictable and thrilling' },
+    { id:'ministry',    name:'Harry Potter & Ministry of Magic',type:'Dark Ride',  i:4, ht:40, desc:'1920s Paris wizarding world — most anticipated new attraction' },
+    { id:'starfall',    name:'Starfall Racers (Celestial Park)', type:'Coaster',   i:4, ht:42, desc:'Dueling coasters through the celestial park skyline' },
+  ]},
+];
+
+const EXCITE_OPTS = [
+  { val:1, label:'😐 Meh',       color:'#6b7a8d' },
+  { val:2, label:'🙂 Interested',color:'#d97706' },
+  { val:3, label:'😊 Excited',   color:'#059669' },
+  { val:4, label:'🤩 Very Excited',color:'#1a6fc4' },
+  { val:5, label:'🔥 Can\'t Wait!',color:'#dc2626' },
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const parkExcitement = {};   // { mk: 3, epcot: 5, ... }
+const rideChecked    = {};   // { 'mk_tron': true, ... }
+let currentStep = 1;
+
+// ═══════════════════════════════════════════════
+// STEP NAVIGATION
+// ═══════════════════════════════════════════════
+const STEP_LABELS = ['Step 1 of 4 — Who are you?','Step 2 of 4 — Park Excitement','Step 3 of 4 — Must-Do Rides','Step 4 of 4 — Final Questions','Done!'];
+const STEP_PROG   = ['25%','50%','75%','90%','100%'];
+
+function goStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+  document.getElementById('step-' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step-' + n).classList.add('active');
+  document.getElementById('prog').style.width       = STEP_PROG[n - 1];
+  document.getElementById('step-label').textContent = STEP_LABELS[n - 1];
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function validateStep(n) {
+  if (n === 1) {
+    const g = document.getElementById('sel-group').value;
+    const nm = document.getElementById('sel-name').value;
+    let ok = true;
+    if (!g)  { document.getElementById('err-group').style.display = 'block'; ok = false; } else { document.getElementById('err-group').style.display = 'none'; }
+    if (!nm) { document.getElementById('err-name').style.display  = 'block'; ok = false; } else { document.getElementById('err-name').style.display  = 'none'; }
+    return ok;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════
+// GROUP → NAME LIST
+// ═══════════════════════════════════════════════
+function updateNameList() {
+  const gk = document.getElementById('sel-group').value;
+  const nc  = document.getElementById('name-card');
+  const sel = document.getElementById('sel-name');
+  if (!gk) { nc.style.display = 'none'; return; }
+  nc.style.display = 'block';
+  sel.innerHTML = '<option value="">— select your name —</option>' +
+    (GROUPS[gk] || []).map(n => '<option value="' + n + '">' + n + '</option>').join('');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER PARK RATINGS (Step 2)
+// ═══════════════════════════════════════════════
+function renderParkRatings() {
+  document.getElementById('park-ratings').innerHTML = PARKS.map(p => `
+    <div class="card" style="border-left:4px solid ${p.color};">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem;">
+        <span style="font-size:1.3rem">${p.icon}</span>
+        <div>
+          <div style="font-weight:700;font-size:.92rem">${p.name}</div>
+          <div style="font-size:.75rem;color:var(--muted)">${p.desc}</div>
+        </div>
+      </div>
+      <div class="star-row" id="excite-${p.id}">
+        ${EXCITE_OPTS.map(o => `
+          <div class="star-btn" data-park="${p.id}" data-val="${o.val}"
+               style="--c:${o.color};color:${o.color}"
+               onclick="setExcitement('${p.id}',${o.val},this)">${o.label}</div>
+        `).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function setExcitement(parkId, val, el) {
+  parkExcitement[parkId] = val;
+  document.querySelectorAll('[data-park="' + parkId + '"]').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER RIDE LIST (Step 3)
+// ═══════════════════════════════════════════════
+function renderRideList() {
+  document.getElementById('ride-list').innerHTML = PARKS.map(p => `
+    <div class="park-block" style="border-color:${p.color}40;">
+      <div class="park-header" style="border-left:5px solid ${p.color};" onclick="togglePark('${p.id}')">
+        <span class="park-icon">${p.icon}</span>
+        <span class="park-title" style="color:${p.color}">${p.name}</span>
+        <span class="park-toggle" id="ptog-${p.id}">▾</span>
+      </div>
+      <div class="park-rides" id="prides-${p.id}">
+        ${p.rides.map(r => `
+          <label class="ride-item" onclick="">
+            <input type="checkbox" id="chk-${p.id}-${r.id}"
+              onchange="setRide('${p.id}','${r.id}',this.checked)" />
+            <div>
+              <div class="ride-name">${r.name}
+                ${Array.from({length:5},(_,i) => `<span class="dot${i<r.i?' on':''}"></span>`).join('')
+                  .replace(/(<span)/g, '<span class="intensity-dots">$1').replace('</span></span>', '</span></span></span>')}
+              </div>
+              <div class="ride-meta">
+                <span class="ride-type">${r.type}</span>
+                ${r.ht ? '<span class="ride-ht">⬆️ ' + r.ht + '" min height</span>' : '<span class="ride-ht">✅ No height req</span>'}
+                <br>${r.desc}
+              </div>
+            </div>
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+  // Fix intensity dots rendering
+  document.querySelectorAll('.ride-name').forEach(el => {
+    el.innerHTML = el.innerHTML.replace(
+      /(<span class="dot[^>]*><\/span>)+/g,
+      m => '<span class="intensity-dots">' + m + '</span>'
+    );
+  });
+}
+
+function togglePark(id) {
+  const r = document.getElementById('prides-' + id);
+  const t = document.getElementById('ptog-' + id);
+  const open = r.classList.toggle('open');
+  t.classList.toggle('open', open);
+}
+
+function setRide(parkId, rideId, checked) {
+  const key = parkId + '_' + rideId;
+  if (checked) rideChecked[key] = true;
+  else delete rideChecked[key];
+}
+
+// ═══════════════════════════════════════════════
+// CHIPS
+// ═══════════════════════════════════════════════
+function toggleChip(el) { el.classList.toggle('sel'); }
+
+function getChipVals(containerId) {
+  return Array.from(document.querySelectorAll('#' + containerId + ' .chip.sel')).map(c => c.dataset.val);
+}
+
+// ═══════════════════════════════════════════════
+// BUILD & SUBMIT
+// ═══════════════════════════════════════════════
+function buildSubmit() {
+  const name  = document.getElementById('sel-name').value;
+  const group = document.getElementById('sel-group').value;
+  const notes = document.getElementById('notes').value.trim();
+
+  // Build parks object
+  const parks = {};
+  PARKS.forEach(p => {
+    const rides = Object.keys(rideChecked)
+      .filter(k => k.startsWith(p.id + '_'))
+      .map(k => k.slice(p.id.length + 1));
+    parks[p.id] = {
+      excitement: parkExcitement[p.id] || 0,
+      rides
+    };
+  });
+
+  const payload = {
+    v:        1,
+    name,
+    group,
+    submitted: new Date().toISOString(),
+    parks,
+    dayPrefs:    getChipVals('day-prefs'),
+    specialPrefs:getChipVals('special-prefs'),
+    notes
+  };
+
+  const json = JSON.stringify(payload, null, 2);
+  document.getElementById('json-out').textContent = json;
+
+  // Build email link
+  const subject = encodeURIComponent('Florida 2029 Survey — ' + name + ' (' + group + ')');
+  const body    = encodeURIComponent(
+    'Hi Trevor!\n\nHere are my trip preferences for Florida 2029.\nPaste the block below into the trip planner import tool.\n\n---BEGIN SURVEY---\n' +
+    JSON.stringify(payload) +
+    '\n---END SURVEY---\n\nSee you in Florida! 🌴'
+  );
+  document.getElementById('email-btn').onclick = () => {
+    window.location.href = 'mailto:trevormw20@gmail.com?subject=' + subject + '&body=' + body;
+  };
+
+  goStep(5);
+}
+
+function copyJSON() {
+  const txt = document.getElementById('json-out').textContent;
+  navigator.clipboard.writeText(
+    '---BEGIN SURVEY---\n' + txt + '\n---END SURVEY---'
+  ).then(() => {
+    document.getElementById('copy-ok').style.display = 'block';
+    setTimeout(() => { document.getElementById('copy-ok').style.display = 'none'; }, 3500);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    document.getElementById('copy-ok').style.display = 'block';
+  });
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+renderParkRatings();
+renderRideList();
+// Open all parks by default on desktop, closed on mobile
+if (window.innerWidth > 600) {
+  PARKS.forEach(p => {
+    document.getElementById('prides-' + p.id).classList.add('open');
+    document.getElementById('ptog-'  + p.id).classList.add('open');
+  });
+}
+</script>
+</body>
+</html>
