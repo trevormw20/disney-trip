@@ -3796,6 +3796,50 @@ function renderSurveyResults() {
     html += '</div>';
   });
 
+  // Dinner picks aggregation
+  const dinnerScore = {}; // { restaurantId: weighted score }
+  const dinnerVoters = {}; // { restaurantId: [{name, rank}] }
+  surveyResponses.forEach(resp => {
+    (resp.dinnerPicks || []).forEach((id, i) => {
+      const pts = 3 - i; // 1st=3pts, 2nd=2pts, 3rd=1pt
+      dinnerScore[id]  = (dinnerScore[id]  || 0) + pts;
+      if (!dinnerVoters[id]) dinnerVoters[id] = [];
+      dinnerVoters[id].push({ name: resp.name, rank: i + 1 });
+    });
+  });
+  const sortedDinner = Object.entries(dinnerScore).sort((a,b) => b[1]-a[1]);
+  if (sortedDinner.length) {
+    const maxScore = sortedDinner[0][1];
+    const DINNER_NAMES_MAP = {
+      victorias:'Victoria & Albert\'s', calif_grill:'California Grill',
+      topolinos:"Topolino's Terrace",  space_220:'Space 220',
+      tiffins:'Tiffins',               be_our_guest:'Be Our Guest',
+      brown_derby:'Hollywood Brown Derby', mythos:'Mythos Restaurant',
+      bigfire:'Bigfire',               fogo:'Fogo de Chão',
+      texas_brazil:'Texas de Brazil',
+    };
+    const RANK_BADGE = ['','🥇','🥈','🥉'];
+    html += '<div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:.75rem 0 .4rem;">💑 Dinner Restaurant Preferences</div>';
+    html += '<div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:.75rem .9rem;margin-bottom:1rem;">';
+    html += '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.55rem;">Weighted score: 1st pick = 3 pts · 2nd pick = 2 pts · 3rd pick = 1 pt</div>';
+    sortedDinner.forEach(([id, score]) => {
+      const pct  = Math.round(score / maxScore * 100);
+      const name = DINNER_NAMES_MAP[id] || id;
+      const voters = (dinnerVoters[id] || []).map(v => RANK_BADGE[v.rank] + v.name).join(', ');
+      html += `<div style="margin-bottom:.55rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;">
+          <span style="flex:1;font-weight:600;">${name}</span>
+          <span style="color:#7c3aed;font-weight:700;font-size:.78rem;">${score} pts</span>
+        </div>
+        <div style="background:#f3e8ff;border-radius:4px;height:8px;margin:.2rem 0;">
+          <div style="width:${pct}%;height:100%;border-radius:4px;background:#7c3aed;"></div>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);">${voters}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
   // Notes
   const notes = surveyResponses.filter(r => r.notes).map(r =>
     '<div style="margin:.4rem 0;font-size:.82rem;"><strong>' + r.name + ':</strong> ' + r.notes + '</div>'
