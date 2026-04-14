@@ -2091,6 +2091,8 @@ const extras = {
   character_dining:  1500,   // 1 character dining meal for all 20 (Chef Mickey's / 'Ohana / Garden Grill)
   grocery_delivery:   500,   // snacks, sunscreen, water, meds, cooling towels — delivered to hotel (NOT in food budget)
   tsa_precheck:      1200,   // ~14 adults × $85 (green card holders eligible; kids 12 & under exempt)
+  hotel_tax:         5500,   // ~12.5% FL hotel tax on Disney + Universal hotel totals (auto-estimate — adjust after booking)
+  dining_tax:        1300,   // ~6.5% FL sales tax on food & dining estimate
   misc:              5000,   // unforeseen needs buffer
 };
 let tylerHasBaby = false; // adds 4th stroller ~$750
@@ -2263,15 +2265,23 @@ function calcBudget() {
   const flights = extras.flights;
 
   const strollerAmt = tylerHasBaby ? extras.strollers + 750 : extras.strollers;
+  // Auto-estimate taxes if user hasn't overridden them
+  const hotelTaxAuto  = Math.round((disneyHotel + portofinoHotel) * 0.125);
+  const diningTaxAuto = Math.round(food * 0.065);
+  const hotelTax  = extras.hotel_tax  ?? hotelTaxAuto;
+  const diningTax = extras.dining_tax ?? diningTaxAuto;
+
   const total = disneyHotel + portofinoHotel + disneyTickets + universalTickets +
     food + flights + extras.transport + extras.boys_night + extras.spa_day +
     extras.shopping + extras.magic_bands + strollerAmt + extras.parking +
     extras.baby_extras + extras.luggage + extras.disney_vip + extras.universal_vip +
     extras.travel_insurance + extras.tips + extras.photopass + extras.bibbidi +
-    extras.character_dining + extras.grocery_delivery + extras.tsa_precheck + extras.misc;
+    extras.character_dining + extras.grocery_delivery + extras.tsa_precheck +
+    hotelTax + diningTax + extras.misc;
 
   return { disneyHotel, portofinoHotel, disneyTickets, universalTickets,
-    food, flights, total, disneyNights, universalNights, disneyDays, universalDays, people };
+    food, flights, hotelTax, diningTax, hotelTaxAuto, diningTaxAuto,
+    total, disneyNights, universalNights, disneyDays, universalDays, people };
 }
 
 function renderBudget() {
@@ -2410,6 +2420,16 @@ function renderBudget() {
       icon:'✈️', name:'TSA PreCheck', amount: extras.tsa_precheck,
       detail:`~14 adults × $85 = $1,190. Kids 12 & under travel free through PreCheck with enrolled parent. Note: legal permanent residents (green card holders) are fully eligible — including long-term residents from Philippines.`,
       color:'#64748b', editable:true, extraKey:'tsa_precheck'
+    },
+    {
+      icon:'🏨', name:'Hotel Tax (FL ~12.5%)', amount: b.hotelTax,
+      detail:`Florida hotel tax in Orange County runs ~12–13% on top of room rates. Auto-calculated as 12.5% of your hotel total (${fmt(b.disneyHotel + b.portofinoHotel)}). Edit to match your actual booking confirmation once you have it.`,
+      color:'#b45309', editable:true, extraKey:'hotel_tax'
+    },
+    {
+      icon:'🍽️', name:'Dining & Sales Tax (FL 6.5%)', amount: b.diningTax,
+      detail:`Florida sales tax is 6.5% on restaurant meals. Auto-calculated as 6.5% of your food & dining estimate (${fmt(b.food)}). Park tickets are tax-inclusive — only meals are taxed separately.`,
+      color:'#b45309', editable:true, extraKey:'dining_tax'
     },
     {
       icon:'🎲', name:'Unforeseen Buffer', amount: extras.misc,
@@ -3412,7 +3432,7 @@ function printItinerary(version) {
       extras.magic_bands + strollerAmt + extras.baby_extras + extras.parking + extras.luggage +
       extras.disney_vip + extras.universal_vip + extras.travel_insurance + extras.tips +
       extras.photopass + extras.bibbidi + extras.character_dining + extras.grocery_delivery +
-      extras.tsa_precheck + extras.misc;
+      extras.tsa_precheck + b.hotelTax + b.diningTax + extras.misc;
     // Note: extras.flights is already shown as a separate line above
     return `
       <tr><td>Disney Hotel — ${disneyHotelData.name} (${b.disneyNights} nights)</td><td>${f(b.disneyHotel)}</td></tr>
