@@ -252,6 +252,7 @@
     .d-res { background: #fef3c7; color: #92400e; }
     .d-price { background: #fee2e2; color: #991b1b; }
     .d-star { background: #ede9fe; color: #5b21b6; }
+    .d-confirmed { background: linear-gradient(90deg,#059669,#0d9488); color: #fff; font-weight: 700; }
     .d-tip { background: #d1fae5; color: #065f46; font-size: .7rem; margin-top: .4rem; display: block; }
 
     /* ════ RIDE PICKER ════ */
@@ -1052,6 +1053,27 @@
     Kids' meals run ~$12–18 (parks) so the 8 kids actually save on the average.
   </div>
 
+  <!-- ════ CONFIRMED PRIORITY BOOKINGS ════ -->
+  <div style="background:linear-gradient(135deg,#065f46,#059669);color:#fff;border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;box-shadow:0 4px 12px rgba(5,150,105,.2);">
+    <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.9;margin-bottom:.35rem;">🎯 Confirmed Priority Bookings — Lock In First</div>
+    <div style="font-size:.95rem;font-weight:700;margin-bottom:.6rem;">Two Magic Kingdom reservations the family wants secured — book these at 6 AM ET on Day 60.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.75rem;margin-top:.5rem;">
+      <div style="background:rgba(255,255,255,.14);padding:.7rem .85rem;border-radius:10px;">
+        <div style="font-size:.78rem;font-weight:700;opacity:.85;">👑 LUNCH</div>
+        <div style="font-size:.95rem;font-weight:700;margin-top:.15rem;">Cinderella's Royal Table</div>
+        <div style="font-size:.72rem;opacity:.88;margin-top:.2rem;line-height:1.5;">Inside Cinderella Castle · princess character meal · prix-fixe</div>
+      </div>
+      <div style="background:rgba(255,255,255,.14);padding:.7rem .85rem;border-radius:10px;">
+        <div style="font-size:.78rem;font-weight:700;opacity:.85;">🏰 DINNER</div>
+        <div style="font-size:.95rem;font-weight:700;margin-top:.15rem;">Be Our Guest</div>
+        <div style="font-size:.72rem;opacity:.88;margin-top:.2rem;line-height:1.5;">Beast's Castle · French cuisine · West Wing room if possible</div>
+      </div>
+    </div>
+    <div style="font-size:.72rem;opacity:.85;margin-top:.65rem;line-height:1.5;">
+      💡 Can be on different days. Both require a full-service Magic Kingdom park day. Cinderella's Royal Table is one of the hardest-to-book reservations on Disney property.
+    </div>
+  </div>
+
   <div class="dining-grid">
 
     <div class="dining-card">
@@ -1078,15 +1100,28 @@
       </div>
     </div>
 
-    <div class="dining-card">
-      <div class="dining-banner" style="background:linear-gradient(90deg,#1a3a5c,#3b82f6)">🏰 Be Our Guest</div>
+    <div class="dining-card" style="border:2px solid #059669;">
+      <div class="dining-banner" style="background:linear-gradient(90deg,#1a3a5c,#3b82f6)">🏰 Be Our Guest · DINNER</div>
       <div class="dining-body">
         <div class="d-park">Magic Kingdom · Beast's Castle</div>
-        <div class="d-name">Be Our Guest Restaurant</div>
+        <div class="d-name">Be Our Guest Restaurant — Dinner</div>
         <div class="d-desc">Dinner inside Beast's enchanted castle — the ballroom, the West Wing, and the Rose Gallery. French cuisine. Kids go wild for the setting. One of the most atmospheric restaurants at Disney.</div>
-        <div class="d-badges"><span class="d-badge d-res">Book 60 days out</span><span class="d-badge d-price">$$$</span><span class="d-badge d-star">Kids' Favorite ⭐</span></div>
-        <span class="d-tip">💡 Request the West Wing room — candelabra, enchanted rose, and stormy window.</span>
+        <div class="d-badges"><span class="d-badge d-confirmed">🎯 Confirmed Booking</span><span class="d-badge d-res">Book 60 days out</span><span class="d-badge d-price">$$$</span><span class="d-badge d-star">Kids' Favorite ⭐</span></div>
+        <span class="d-tip">💡 Request the West Wing room — candelabra, enchanted rose, and stormy window. Dinner is full table service (lunch is quick-service only).</span>
         <a class="hotel-ext-link" href="https://disneyworld.disney.go.com/dining/magic-kingdom/be-our-guest-restaurant/" target="_blank" rel="noopener">🔗 View Restaurant</a>
+      </div>
+    </div>
+
+    <!-- Cinderella's Royal Table — LUNCH -->
+    <div class="dining-card" style="border:2px solid #059669;">
+      <div class="dining-banner" style="background:linear-gradient(90deg,#be185d,#ec4899)">👑 Cinderella's Royal Table · LUNCH</div>
+      <div class="dining-body">
+        <div class="d-park">Magic Kingdom · Inside Cinderella Castle</div>
+        <div class="d-name">Cinderella's Royal Table — Lunch</div>
+        <div class="d-desc">Dine inside Cinderella Castle with princess character meet-and-greets at the table — Cinderella, Snow White, Ariel, Aurora, Jasmine (rotates). Kids (and adults) are mesmerized. Prix-fixe American menu.</div>
+        <div class="d-badges"><span class="d-badge d-confirmed">🎯 Confirmed Booking</span><span class="d-badge d-res">Book 60 days out</span><span class="d-badge d-price">$$$$</span><span class="d-badge d-star">Princesses ⭐</span></div>
+        <span class="d-tip">💡 One of the hardest-to-book reservations on property — log in at 6 AM ET exactly 60 days before check-in. Lunch slots open faster than dinner. Dress-up encouraged for the kids.</span>
+        <a class="hotel-ext-link" href="https://disneyworld.disney.go.com/dining/magic-kingdom/cinderella-royal-table/" target="_blank" rel="noopener">🔗 View Restaurant</a>
       </div>
     </div>
 
