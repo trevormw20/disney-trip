@@ -278,10 +278,29 @@
       <div class="dinner-grid" id="dinner-grid"></div>
     </div>
 
-    <div class="sec-head">📝 Anything Else?</div>
+    <div class="sec-head">🥜 Food Allergies &amp; Dietary Restrictions</div>
     <div class="card">
-      <label for="notes">Any must-dos, worries, dietary needs, mobility needs, or notes for Trevor?</label>
-      <textarea id="notes" placeholder="e.g. Owen is terrified of anything dark, Sophie really wants to meet Cinderella, we need halal food options…"></textarea>
+      <label for="allergies">Does anyone in your group have food allergies or dietary restrictions?</label>
+      <textarea id="allergies" style="min-height:70px;" placeholder="e.g. Severe mango allergy, gluten-free, vegetarian, halal, kosher, shellfish allergy, lactose intolerant… List each person's name and restriction so the coordinator can plan meals accordingly."></textarea>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">⚠️ Even mild allergies are important to note — restaurants and snack planning will be coordinated around your group's needs.</div>
+    </div>
+
+    <div class="sec-head">❓ Questions for the Coordinator</div>
+    <div class="card">
+      <label for="questions">Anything you're wondering about the trip?</label>
+      <textarea id="questions" style="min-height:70px;" placeholder="e.g. What should we pack? Will there be downtime? Are kids covered for snacks? What happens if someone gets sick? How do payments work?…"></textarea>
+    </div>
+
+    <div class="sec-head">💡 Suggestions</div>
+    <div class="card">
+      <label for="suggestions">Any ideas to make the trip even better?</label>
+      <textarea id="suggestions" style="min-height:70px;" placeholder="e.g. It would be fun to do a group photo at the castle, maybe a movie night at the hotel, we'd love a morning where we sleep in…"></textarea>
+    </div>
+
+    <div class="sec-head">📝 Other Notes</div>
+    <div class="card">
+      <label for="notes">Anything else the coordinator should know?</label>
+      <textarea id="notes" placeholder="e.g. Owen is terrified of anything dark, Sophie really wants to meet Cinderella, we need a stroller-friendly schedule, mobility considerations…"></textarea>
     </div>
 
     <div class="nav-row">
@@ -652,9 +671,12 @@ function getChipVals(containerId) {
 // BUILD & SUBMIT
 // ═══════════════════════════════════════════════
 function buildSubmit() {
-  const name  = document.getElementById('sel-name').value;
-  const group = document.getElementById('sel-group').value;
-  const notes = document.getElementById('notes').value.trim();
+  const name        = document.getElementById('sel-name').value;
+  const group       = document.getElementById('sel-group').value;
+  const allergies   = document.getElementById('allergies').value.trim();
+  const questions   = document.getElementById('questions').value.trim();
+  const suggestions = document.getElementById('suggestions').value.trim();
+  const notes       = document.getElementById('notes').value.trim();
 
   // Build parks object
   const parks = {};
@@ -677,6 +699,9 @@ function buildSubmit() {
     dayPrefs:    getChipVals('day-prefs'),
     specialPrefs:getChipVals('special-prefs'),
     dinnerPicks: dinnerPicks.slice(),   // top 3 restaurant ids in order
+    allergies,
+    questions,
+    suggestions,
     notes
   };
 
