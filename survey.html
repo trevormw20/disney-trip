@@ -163,6 +163,60 @@
     .dinner-picks-summary { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; min-height:28px; }
     .dpick-tag { font-size:.75rem; font-weight:700; padding:.22rem .65rem; border-radius:12px; color:#fff; }
 
+    /* ── Lanyard/gear picker ── */
+    .lanyard-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:.6rem; }
+    @media (max-width:480px) { .lanyard-grid { grid-template-columns:1fr; } }
+    .lanyard-card {
+      border:2px solid var(--border); border-radius:12px; padding:.9rem .8rem;
+      cursor:pointer; transition:all .18s; background:#fff; text-align:center;
+      user-select:none; position:relative;
+    }
+    .lanyard-card:hover { border-color:#a5b4fc; background:#f5f3ff; }
+    .lanyard-card.sel { border-color:#1a6fc4; background:#eff6ff; }
+    .lanyard-card.sel::after {
+      content:'✓'; position:absolute; top:.5rem; right:.55rem;
+      width:22px; height:22px; border-radius:50%; background:#1a6fc4; color:#fff;
+      font-size:.82rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+    }
+    .lanyard-label { font-size:.92rem; font-weight:700; margin-top:.65rem; margin-bottom:.25rem; }
+    .lanyard-desc { font-size:.72rem; color:var(--muted); line-height:1.5; }
+
+    /* Keychain visual mockup */
+    .ly-preview { height:90px; display:flex; align-items:center; justify-content:center; gap:.15rem; margin:0 auto; }
+    .ly-key-ring {
+      width:26px; height:26px; border:3px solid #9ca3af; border-radius:50%;
+      background:radial-gradient(circle at 30% 30%, #f3f4f6, #9ca3af);
+    }
+    .ly-key-tag {
+      width:85px; height:30px; border-radius:4px; border:2.5px solid #1a6fc4;
+      background:linear-gradient(135deg,#0ea5e9,#38bdf8);
+      display:flex; align-items:center; justify-content:center; font-size:1rem;
+      box-shadow:inset 0 0 8px rgba(255,255,255,.35);
+    }
+
+    /* Lanyard visual mockup */
+    .ly-neck {
+      position:relative; width:60px; height:85px; margin:0 auto;
+      display:flex; flex-direction:column; align-items:center;
+    }
+    .ly-neck-strap {
+      width:100%; height:35px;
+      background:repeating-linear-gradient(45deg,#fbbf24 0 6px,#ef4444 6px 12px,#3b82f6 12px 18px,#10b981 18px 24px);
+      border-radius:6px 6px 2px 2px;
+      border-top:3px solid #fff; border-bottom:1px solid rgba(0,0,0,.15);
+      position:relative;
+    }
+    .ly-neck-strap::before {
+      content:''; position:absolute; top:3px; left:50%; transform:translateX(-50%);
+      width:12px; height:6px; background:#374151; border-radius:2px;
+    }
+    .ly-neck-card {
+      margin-top:3px; width:42px; height:42px; background:#fff;
+      border:2px solid #1a6fc4; border-radius:4px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; box-shadow:0 2px 4px rgba(0,0,0,.15);
+    }
+
     @media (max-width:480px) {
       header h1 { font-size:1.3rem; }
       .star-btn { font-size:.75rem; }
@@ -263,6 +317,34 @@
         <div class="chip" data-val="fireworks"      onclick="toggleChip(this)">🎆 Fireworks &amp; Night Shows</div>
         <div class="chip" data-val="character_meal" onclick="toggleChip(this)">🍽️ Character Dining</div>
         <div class="chip" data-val="pool_party"     onclick="toggleChip(this)">🌊 Pool &amp; Splash Time</div>
+      </div>
+    </div>
+
+    <div class="sec-head">🎁 Trip Gear Preference</div>
+    <div class="card">
+      <label>Which style of personalized trip gear would you prefer?</label>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;line-height:1.55;">
+        Each person gets a custom piece of trip gear (designed in your family color). Pick whichever style you'd actually use — no right answer.
+      </p>
+      <div class="lanyard-grid">
+        <div class="lanyard-card" id="ly-card-keychain" onclick="selectLanyard('keychain')">
+          <div class="ly-preview">
+            <div class="ly-key-ring"></div>
+            <div class="ly-key-tag">🎨</div>
+          </div>
+          <div class="lanyard-label">🔑 Keychain Loop</div>
+          <div class="lanyard-desc">Small embroidered fabric tag (~5") with a metal key ring. Clips to a backpack zipper, belt loop, or bag strap. Great if you don't want something around your neck.</div>
+        </div>
+        <div class="lanyard-card" id="ly-card-neck" onclick="selectLanyard('neck')">
+          <div class="ly-preview">
+            <div class="ly-neck">
+              <div class="ly-neck-strap"></div>
+              <div class="ly-neck-card">🎟️</div>
+            </div>
+          </div>
+          <div class="lanyard-label">📛 Full Neck Lanyard</div>
+          <div class="lanyard-desc">Full-length printed lanyard with a clear ID card holder. Worn around the neck — holds your MagicBand, room key, and pin trading setup. Hands-free.</div>
+        </div>
       </div>
     </div>
 
@@ -478,6 +560,7 @@ const EXCITE_OPTS = [
 const parkExcitement = {};   // { mk: 3, epcot: 5, ... }
 const rideChecked    = {};   // { 'mk_tron': true, ... }
 let dinnerPicks      = [];   // ordered array of up to 3 restaurant ids
+let lanyardPref      = '';   // 'keychain' or 'neck'
 let currentStep = 1;
 
 // ═══════════════════════════════════════════════
@@ -659,6 +742,15 @@ function updateDinnerUI() {
 }
 
 // ═══════════════════════════════════════════════
+// LANYARD PICKER
+// ═══════════════════════════════════════════════
+function selectLanyard(val) {
+  lanyardPref = val;
+  document.getElementById('ly-card-keychain').classList.toggle('sel', val === 'keychain');
+  document.getElementById('ly-card-neck').classList.toggle('sel', val === 'neck');
+}
+
+// ═══════════════════════════════════════════════
 // CHIPS
 // ═══════════════════════════════════════════════
 function toggleChip(el) { el.classList.toggle('sel'); }
@@ -699,6 +791,7 @@ function buildSubmit() {
     dayPrefs:    getChipVals('day-prefs'),
     specialPrefs:getChipVals('special-prefs'),
     dinnerPicks: dinnerPicks.slice(),   // top 3 restaurant ids in order
+    lanyardPref,                         // 'keychain' | 'neck' | ''
     allergies,
     questions,
     suggestions,
