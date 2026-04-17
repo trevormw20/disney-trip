@@ -181,8 +181,11 @@
     .lanyard-label { font-size:.92rem; font-weight:700; margin-top:.65rem; margin-bottom:.25rem; }
     .lanyard-desc { font-size:.72rem; color:var(--muted); line-height:1.5; }
 
+    /* Real image style */
+    .ly-real-img { max-height:110px; max-width:100%; object-fit:contain; border-radius:6px; }
+
     /* Keychain visual mockup */
-    .ly-preview { height:90px; display:flex; align-items:center; justify-content:center; gap:.15rem; margin:0 auto; }
+    .ly-preview { height:110px; display:flex; align-items:center; justify-content:center; gap:.15rem; margin:0 auto; }
     .ly-key-ring {
       width:26px; height:26px; border:3px solid #9ca3af; border-radius:50%;
       background:radial-gradient(circle at 30% 30%, #f3f4f6, #9ca3af);
@@ -329,17 +332,25 @@
       <div class="lanyard-grid">
         <div class="lanyard-card" id="ly-card-keychain" onclick="selectLanyard('keychain')">
           <div class="ly-preview">
-            <div class="ly-key-ring"></div>
-            <div class="ly-key-tag">🎨</div>
+            <img src="images/keychain-example.png" alt="Keychain Loop example" class="ly-real-img"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="ly-mockup" style="display:none;align-items:center;gap:.15rem;">
+              <div class="ly-key-ring"></div>
+              <div class="ly-key-tag">🎨</div>
+            </div>
           </div>
           <div class="lanyard-label">🔑 Keychain Loop</div>
           <div class="lanyard-desc">Small embroidered fabric tag (~5") with a metal key ring. Clips to a backpack zipper, belt loop, or bag strap. Great if you don't want something around your neck.</div>
         </div>
         <div class="lanyard-card" id="ly-card-neck" onclick="selectLanyard('neck')">
           <div class="ly-preview">
-            <div class="ly-neck">
-              <div class="ly-neck-strap"></div>
-              <div class="ly-neck-card">🎟️</div>
+            <img src="images/lanyard-example.png" alt="Full Neck Lanyard example" class="ly-real-img"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="ly-mockup" style="display:none;flex-direction:column;align-items:center;">
+              <div class="ly-neck">
+                <div class="ly-neck-strap"></div>
+                <div class="ly-neck-card">🎟️</div>
+              </div>
             </div>
           </div>
           <div class="lanyard-label">📛 Full Neck Lanyard</div>
