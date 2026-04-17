@@ -184,6 +184,29 @@
     /* Real image style */
     .ly-real-img { max-height:110px; max-width:100%; object-fit:contain; border-radius:6px; }
 
+    /* ── Character picker ── */
+    .character-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(135px,1fr)); gap:.5rem; margin-top:.6rem; }
+    .char-card {
+      border:2px solid var(--border); border-radius:10px; padding:.55rem .5rem .5rem;
+      cursor:pointer; transition:all .15s; background:#fff; position:relative;
+      text-align:center; user-select:none;
+    }
+    .char-card:hover { border-color:#a5b4fc; background:#f5f3ff; }
+    .char-card.picked-1 { border-color:#d97706; background:#fffbeb; }
+    .char-card.picked-2 { border-color:#1a6fc4; background:#eff6ff; }
+    .char-card.picked-3 { border-color:#059669; background:#f0fdf4; }
+    .char-name { font-size:.82rem; font-weight:700; line-height:1.25; }
+    .char-franchise { font-size:.64rem; color:var(--muted); font-weight:500; margin-top:.2rem;
+      text-transform:uppercase; letter-spacing:.4px; }
+    .char-rank {
+      position:absolute; top:.3rem; right:.35rem; font-size:.66rem; font-weight:700;
+      width:18px; height:18px; border-radius:50%; display:none;
+      align-items:center; justify-content:center; color:#fff;
+    }
+    .picked-1 .char-rank { display:flex; background:#d97706; }
+    .picked-2 .char-rank { display:flex; background:#1a6fc4; }
+    .picked-3 .char-rank { display:flex; background:#059669; }
+
     /* Keychain visual mockup */
     .ly-preview { height:110px; display:flex; align-items:center; justify-content:center; gap:.15rem; margin:0 auto; }
     .ly-key-ring {
@@ -356,6 +379,22 @@
           <div class="lanyard-label">📛 Full Neck Lanyard</div>
           <div class="lanyard-desc">Full-length printed lanyard with a clear ID card holder — pins attach all along the strap for easy trading. Worn around the neck, holds your MagicBand and room key too. Hands-free.</div>
         </div>
+      </div>
+    </div>
+
+    <div class="sec-head">⭐ Top 3 Favorite Disney Characters</div>
+    <div class="card">
+      <label>Pick your <strong>top 3 favorite Disney characters</strong>.
+        <span style="font-weight:400;color:var(--muted)"> Tap to rank — 1st, 2nd, 3rd.</span>
+      </label>
+      <p class="dinner-hint">Used to plan character meet-and-greets, pick your starter pins for pin trading, and customize your lanyard/keychain design. Tap a character to select, tap again to remove.</p>
+      <div class="dinner-picks-summary" id="character-summary">
+        <span style="font-size:.75rem;color:var(--muted);font-style:italic;">No picks yet — tap cards below</span>
+      </div>
+      <div class="character-grid" id="character-grid"></div>
+      <div style="margin-top:.95rem;">
+        <label for="char-other" style="font-size:.8rem;">Not in the list? Add any other characters:</label>
+        <input type="text" id="char-other" placeholder="e.g. Figment, Oswald, Baymax, Dory, Mulan, Sally from NBC…" style="margin-top:.3rem;">
       </div>
     </div>
 
@@ -557,6 +596,66 @@ const DINNER_OPTS = [
     vibe:'Unlimited churrasco and massive salad bar. More casual than Fogo but still a great couples evening. Popular and fun.' },
 ];
 
+const CHARACTERS = [
+  // Classic Disney
+  { id:'mickey',     name:'Mickey Mouse',      franchise:'Classic' },
+  { id:'minnie',     name:'Minnie Mouse',      franchise:'Classic' },
+  { id:'donald',     name:'Donald Duck',       franchise:'Classic' },
+  { id:'daisy',      name:'Daisy Duck',        franchise:'Classic' },
+  { id:'goofy',      name:'Goofy',             franchise:'Classic' },
+  { id:'pluto',      name:'Pluto',             franchise:'Classic' },
+  // Princesses
+  { id:'cinderella', name:'Cinderella',        franchise:'Princess' },
+  { id:'ariel',      name:'Ariel',             franchise:'Princess' },
+  { id:'belle',      name:'Belle',             franchise:'Princess' },
+  { id:'rapunzel',   name:'Rapunzel',          franchise:'Princess' },
+  { id:'moana',      name:'Moana',             franchise:'Princess' },
+  { id:'tiana',      name:'Tiana',             franchise:'Princess' },
+  { id:'jasmine',    name:'Jasmine',           franchise:'Princess' },
+  { id:'mulan',      name:'Mulan',             franchise:'Princess' },
+  { id:'anna',       name:'Anna',              franchise:'Frozen' },
+  { id:'elsa',       name:'Elsa',              franchise:'Frozen' },
+  { id:'olaf',       name:'Olaf',              franchise:'Frozen' },
+  // Classic fantasy
+  { id:'tinkerbell', name:'Tinker Bell',       franchise:'Peter Pan' },
+  { id:'peterpan',   name:'Peter Pan',         franchise:'Peter Pan' },
+  { id:'pooh',       name:'Winnie the Pooh',   franchise:'Pooh' },
+  { id:'tigger',     name:'Tigger',            franchise:'Pooh' },
+  { id:'eeyore',     name:'Eeyore',            franchise:'Pooh' },
+  { id:'stitch',     name:'Stitch',            franchise:'Lilo & Stitch' },
+  { id:'simba',      name:'Simba',             franchise:'Lion King' },
+  // Pixar
+  { id:'buzz',       name:'Buzz Lightyear',    franchise:'Toy Story' },
+  { id:'woody',      name:'Woody',             franchise:'Toy Story' },
+  { id:'jessie',     name:'Jessie',            franchise:'Toy Story' },
+  { id:'sulley',     name:'Sulley',            franchise:'Monsters Inc' },
+  { id:'mike',       name:'Mike Wazowski',     franchise:'Monsters Inc' },
+  { id:'nemo',       name:'Nemo',              franchise:'Finding Nemo' },
+  { id:'dory',       name:'Dory',              franchise:'Finding Nemo' },
+  { id:'remy',       name:'Remy',              franchise:'Ratatouille' },
+  { id:'mcqueen',    name:'Lightning McQueen', franchise:'Cars' },
+  { id:'mater',      name:'Mater',             franchise:'Cars' },
+  { id:'incredibles',name:'Mr. Incredible',    franchise:'Incredibles' },
+  // Villains
+  { id:'maleficent', name:'Maleficent',        franchise:'Villain' },
+  { id:'ursula',     name:'Ursula',            franchise:'Villain' },
+  { id:'jafar',      name:'Jafar',             franchise:'Villain' },
+  { id:'cruella',    name:'Cruella',           franchise:'Villain' },
+  { id:'evil_queen', name:'Evil Queen',        franchise:'Villain' },
+  // Star Wars
+  { id:'vader',      name:'Darth Vader',       franchise:'Star Wars' },
+  { id:'chewbacca',  name:'Chewbacca',         franchise:'Star Wars' },
+  { id:'bb8',        name:'BB-8',              franchise:'Star Wars' },
+  { id:'kylo',       name:'Kylo Ren',          franchise:'Star Wars' },
+  { id:'rey',        name:'Rey',               franchise:'Star Wars' },
+  // Marvel
+  { id:'iron_man',   name:'Iron Man',          franchise:'Marvel' },
+  { id:'spiderman',  name:'Spider-Man',        franchise:'Marvel' },
+  { id:'thor',       name:'Thor',              franchise:'Marvel' },
+  { id:'cap',        name:'Captain America',   franchise:'Marvel' },
+  { id:'groot',      name:'Groot',             franchise:'Marvel' },
+];
+
 const EXCITE_OPTS = [
   { val:1, label:'😐 Meh',       color:'#6b7a8d' },
   { val:2, label:'🙂 Interested',color:'#d97706' },
@@ -571,6 +670,7 @@ const EXCITE_OPTS = [
 const parkExcitement = {};   // { mk: 3, epcot: 5, ... }
 const rideChecked    = {};   // { 'mk_tron': true, ... }
 let dinnerPicks      = [];   // ordered array of up to 3 restaurant ids
+let characterPicks   = [];   // ordered array of up to 3 character ids
 let lanyardPref      = '';   // 'keychain' or 'neck'
 let currentStep = 1;
 
@@ -753,6 +853,57 @@ function updateDinnerUI() {
 }
 
 // ═══════════════════════════════════════════════
+// CHARACTER PICKER
+// ═══════════════════════════════════════════════
+function renderCharacterGrid() {
+  document.getElementById('character-grid').innerHTML = CHARACTERS.map(c => `
+    <div class="char-card" id="cc-${c.id}" onclick="toggleCharacter('${c.id}')">
+      <span class="char-rank" id="cr-${c.id}"></span>
+      <div class="char-name">${c.name}</div>
+      <div class="char-franchise">${c.franchise}</div>
+    </div>`).join('');
+}
+
+function toggleCharacter(id) {
+  const idx = characterPicks.indexOf(id);
+  if (idx >= 0) {
+    characterPicks.splice(idx, 1);
+  } else {
+    if (characterPicks.length >= 3) return;
+    characterPicks.push(id);
+  }
+  updateCharacterUI();
+}
+
+function updateCharacterUI() {
+  const RANK_COLORS = ['#d97706','#1a6fc4','#059669'];
+  CHARACTERS.forEach(c => {
+    const card = document.getElementById('cc-' + c.id);
+    const rank = document.getElementById('cr-' + c.id);
+    if (!card || !rank) return;
+    card.className = 'char-card';
+    rank.textContent = '';
+  });
+  characterPicks.forEach((id, i) => {
+    const card = document.getElementById('cc-' + id);
+    const rank = document.getElementById('cr-' + id);
+    if (card && rank) {
+      card.classList.add('picked-' + (i + 1));
+      rank.textContent = i + 1;
+    }
+  });
+  const sum = document.getElementById('character-summary');
+  if (!characterPicks.length) {
+    sum.innerHTML = '<span style="font-size:.75rem;color:var(--muted);font-style:italic;">No picks yet — tap cards below</span>';
+    return;
+  }
+  sum.innerHTML = characterPicks.map((id, i) => {
+    const c = CHARACTERS.find(x => x.id === id);
+    return `<span class="dpick-tag" style="background:${RANK_COLORS[i]}">#${i+1} ${c ? c.name : id}</span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
 // LANYARD PICKER
 // ═══════════════════════════════════════════════
 function selectLanyard(val) {
@@ -780,6 +931,7 @@ function buildSubmit() {
   const questions   = document.getElementById('questions').value.trim();
   const suggestions = document.getElementById('suggestions').value.trim();
   const notes       = document.getElementById('notes').value.trim();
+  const charOther   = document.getElementById('char-other').value.trim();
 
   // Build parks object
   const parks = {};
@@ -801,8 +953,10 @@ function buildSubmit() {
     parks,
     dayPrefs:    getChipVals('day-prefs'),
     specialPrefs:getChipVals('special-prefs'),
-    dinnerPicks: dinnerPicks.slice(),   // top 3 restaurant ids in order
-    lanyardPref,                         // 'keychain' | 'neck' | ''
+    dinnerPicks: dinnerPicks.slice(),       // top 3 restaurant ids in order
+    characterPicks: characterPicks.slice(), // top 3 character ids in order
+    characterOther: charOther,              // free-text characters not in list
+    lanyardPref,                            // 'keychain' | 'neck' | ''
     allergies,
     questions,
     suggestions,
@@ -848,6 +1002,7 @@ function copyJSON() {
 renderParkRatings();
 renderRideList();
 renderDinnerGrid();
+renderCharacterGrid();
 // Open all parks by default on desktop, closed on mobile
 if (window.innerWidth > 600) {
   PARKS.forEach(p => {
