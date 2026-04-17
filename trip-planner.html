@@ -499,6 +499,43 @@
     .sec-chevron { font-size:.8rem; opacity:.6; flex-shrink:0; order:2; padding-left:.4rem; }
     .section-content.sec-collapsed { display:none; }
 
+    /* ════ EXPAND/COLLAPSE ALL BUTTONS ════ */
+    .sec-toolbar { display:flex; gap:.5rem; justify-content:flex-end; margin:-.5rem 0 1rem; }
+    .sec-tool-btn { background:var(--card); border:1px solid var(--border); color:var(--muted);
+      border-radius:18px; padding:.35rem .85rem; font-size:.75rem; font-weight:600;
+      cursor:pointer; transition:all .15s; }
+    .sec-tool-btn:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    /* ════ CHECKLIST ════ */
+    .cl-panel { background:var(--card); border:1px solid var(--border); border-radius:14px;
+      padding:1rem 1.1rem; margin-bottom:1rem; }
+    .cl-add-row { display:flex; gap:.55rem; margin-bottom:.85rem; }
+    .cl-input { flex:1; padding:.55rem .75rem; border:1.5px solid var(--border); border-radius:8px;
+      font-size:.88rem; font-family:inherit; color:var(--text); background:#fff; }
+    .cl-input:focus { outline:none; border-color:var(--blue); }
+    .cl-add-btn { padding:.55rem 1.1rem; background:linear-gradient(135deg,#1a6fc4,#0d9488);
+      color:#fff; border:none; border-radius:8px; font-size:.85rem; font-weight:700;
+      cursor:pointer; white-space:nowrap; }
+    .cl-add-btn:hover { opacity:.88; }
+    .cl-list { list-style:none; padding:0; margin:0; }
+    .cl-item { display:flex; align-items:center; gap:.7rem; padding:.55rem .7rem;
+      border-bottom:1px solid var(--border); }
+    .cl-item:last-child { border-bottom:none; }
+    .cl-item:hover { background:#f8fafc; }
+    .cl-checkbox { width:18px; height:18px; cursor:pointer; accent-color:#059669; flex-shrink:0; }
+    .cl-text { flex:1; font-size:.88rem; color:var(--text); line-height:1.45; word-break:break-word; }
+    .cl-item.cl-done .cl-text { text-decoration:line-through; color:var(--muted); opacity:.7; }
+    .cl-delete { background:none; border:none; color:#9ca3af; cursor:pointer; padding:.25rem .45rem;
+      border-radius:4px; font-size:1rem; line-height:1; }
+    .cl-delete:hover { background:#fee2e2; color:#dc2626; }
+    .cl-empty { text-align:center; color:var(--muted); font-size:.85rem; padding:1.25rem .5rem;
+      font-style:italic; }
+    .cl-meta { display:flex; justify-content:space-between; align-items:center; margin-top:.85rem;
+      padding-top:.75rem; border-top:1px solid var(--border); font-size:.78rem; color:var(--muted); }
+    .cl-clear-btn { background:none; border:1px solid var(--border); color:var(--muted);
+      border-radius:14px; padding:.3rem .75rem; font-size:.72rem; font-weight:600; cursor:pointer; }
+    .cl-clear-btn:hover { background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+
     /* ════ DINNER PICKER ════ */
     .dcb-dinner-row {
       border-top:1px dashed #f9a8d4; margin-top:.35rem; padding-top:.3rem;
@@ -715,6 +752,11 @@
   </div>
 
   <!-- ════ STATS ════ -->
+  <div class="sec-toolbar">
+    <button class="sec-tool-btn" onclick="expandAllSections()">⬇ Expand All</button>
+    <button class="sec-tool-btn" onclick="collapseAllSections()">⬆ Collapse All</button>
+  </div>
+
   <div class="section-title">Overview</div>
   <div class="stats">
     <div class="stat-card">
@@ -740,6 +782,23 @@
     <div class="stat-card">
       <div class="num" style="color:var(--red)">$—</div>
       <div class="label">Est. Budget</div>
+    </div>
+  </div>
+
+  <!-- ════ MY CHECKLIST ════ -->
+  <div class="section-title">My Task Checklist</div>
+  <div style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;line-height:1.6;">
+    Your personal to-do list for trip prep. Add any task you want to remember — everything saves automatically to this browser. Check off items as you complete them.
+  </div>
+  <div class="cl-panel">
+    <div class="cl-add-row">
+      <input type="text" class="cl-input" id="cl-input" placeholder="Type a task (e.g. Purchase AirTags for kids) and press Enter" onkeydown="if(event.key==='Enter')addChecklistItem()">
+      <button class="cl-add-btn" onclick="addChecklistItem()">➕ Add</button>
+    </div>
+    <ul class="cl-list" id="cl-list"></ul>
+    <div class="cl-meta">
+      <span id="cl-count">0 of 0 complete</span>
+      <button class="cl-clear-btn" onclick="clearCompletedChecklist()">🗑️ Clear Completed</button>
     </div>
   </div>
 
@@ -4925,12 +4984,17 @@ ${specialNotes.length ? `<h2>⭐ Special Plans for Your Group</h2><div class="sp
 }
 
 // ════════════════════════════════
-// COLLAPSIBLE SECTIONS
+// COLLAPSIBLE SECTIONS (collapsed by default, persisted)
 // ════════════════════════════════
+let _sectionStates = {};
+try { _sectionStates = JSON.parse(localStorage.getItem('fp_section_states') || '{}'); } catch(e) { _sectionStates = {}; }
+
+function saveSectionStates() {
+  try { localStorage.setItem('fp_section_states', JSON.stringify(_sectionStates)); } catch(e) {}
+}
+
 function initCollapsibleSections() {
-  // Find all section-title elements in main content
   document.querySelectorAll('main .section-title').forEach(title => {
-    // Collect consecutive siblings until the next section-title or end of parent
     const siblings = [];
     let el = title.nextElementSibling;
     while (el && !el.classList.contains('section-title')) {
@@ -4939,25 +5003,123 @@ function initCollapsibleSections() {
     }
     if (!siblings.length) return;
 
-    // Wrap siblings in a collapsible container
     const wrapper = document.createElement('div');
     wrapper.className = 'section-content';
     title.parentNode.insertBefore(wrapper, siblings[0]);
     siblings.forEach(s => wrapper.appendChild(s));
 
-    // Add chevron indicator
     const chevron = document.createElement('span');
     chevron.className = 'sec-chevron';
-    chevron.textContent = '▾';
     title.appendChild(chevron);
 
-    // Toggle on click
+    // Use title text as the state key
+    const key = (title.childNodes[0]?.textContent || title.textContent).trim();
+
+    // Default to collapsed; honor saved state if present
+    const startCollapsed = _sectionStates[key] !== false; // false means "expanded"; anything else = collapsed
+    wrapper.classList.toggle('sec-collapsed', startCollapsed);
+    chevron.textContent = startCollapsed ? '▸' : '▾';
+
     title.addEventListener('click', () => {
       const collapsing = !wrapper.classList.contains('sec-collapsed');
       wrapper.classList.toggle('sec-collapsed', collapsing);
       chevron.textContent = collapsing ? '▸' : '▾';
+      _sectionStates[key] = collapsing; // true = collapsed, false = expanded
+      saveSectionStates();
     });
   });
+}
+
+function expandAllSections() {
+  document.querySelectorAll('main .section-content').forEach(w => w.classList.remove('sec-collapsed'));
+  document.querySelectorAll('main .sec-chevron').forEach(c => c.textContent = '▾');
+  document.querySelectorAll('main .section-title').forEach(t => {
+    const key = (t.childNodes[0]?.textContent || t.textContent).trim();
+    _sectionStates[key] = false;
+  });
+  saveSectionStates();
+}
+
+function collapseAllSections() {
+  document.querySelectorAll('main .section-content').forEach(w => w.classList.add('sec-collapsed'));
+  document.querySelectorAll('main .sec-chevron').forEach(c => c.textContent = '▸');
+  document.querySelectorAll('main .section-title').forEach(t => {
+    const key = (t.childNodes[0]?.textContent || t.textContent).trim();
+    _sectionStates[key] = true;
+  });
+  saveSectionStates();
+}
+
+// ════════════════════════════════
+// CUSTOM CHECKLIST (coordinator to-do)
+// ════════════════════════════════
+let _checklist = [];
+try { _checklist = JSON.parse(localStorage.getItem('fp_checklist') || '[]'); } catch(e) { _checklist = []; }
+
+function saveChecklist() {
+  try { localStorage.setItem('fp_checklist', JSON.stringify(_checklist)); } catch(e) {}
+}
+
+function renderChecklist() {
+  const list  = document.getElementById('cl-list');
+  const count = document.getElementById('cl-count');
+  if (!list) return;
+
+  if (!_checklist.length) {
+    list.innerHTML = '<div class="cl-empty">No tasks yet. Add one above to get started.</div>';
+    count.textContent = '0 of 0 complete';
+    return;
+  }
+
+  list.innerHTML = _checklist.map((item, i) => `
+    <li class="cl-item ${item.done ? 'cl-done' : ''}">
+      <input type="checkbox" class="cl-checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${i})">
+      <span class="cl-text">${escapeChecklistText(item.text)}</span>
+      <button class="cl-delete" onclick="deleteChecklistItem(${i})" title="Delete task">✕</button>
+    </li>
+  `).join('');
+
+  const done = _checklist.filter(i => i.done).length;
+  count.textContent = done + ' of ' + _checklist.length + ' complete';
+}
+
+function escapeChecklistText(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function addChecklistItem() {
+  const input = document.getElementById('cl-input');
+  const text  = (input.value || '').trim();
+  if (!text) return;
+  _checklist.push({ text, done: false, added: Date.now() });
+  input.value = '';
+  saveChecklist();
+  renderChecklist();
+}
+
+function toggleChecklistItem(i) {
+  if (!_checklist[i]) return;
+  _checklist[i].done = !_checklist[i].done;
+  saveChecklist();
+  renderChecklist();
+}
+
+function deleteChecklistItem(i) {
+  if (!_checklist[i]) return;
+  _checklist.splice(i, 1);
+  saveChecklist();
+  renderChecklist();
+}
+
+function clearCompletedChecklist() {
+  const before = _checklist.length;
+  _checklist = _checklist.filter(i => !i.done);
+  if (_checklist.length !== before) {
+    saveChecklist();
+    renderChecklist();
+  }
 }
 
 // ── BOOT ──────────────────────────────────────────────
@@ -4987,6 +5149,7 @@ renderUniversalHotels();
 renderBudget();
 renderAllowance();
 renderRidePicker();
+renderChecklist();
 initCollapsibleSections(); // must run after all sections are rendered
 </script>
 </body>
