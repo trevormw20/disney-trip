@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Would You Rather — Universal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🤔 Would You Rather</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Two Universal-themed choices. Pick one. Discuss. The phone tracks how the group voted.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Q 1</div>
+      </div>
+
+      <div class="card" style="text-align:center; margin-bottom:1rem;">
+        <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px;">Would you rather...</div>
+      </div>
+
+      <button class="choice a" id="choiceA" onclick="vote('A')">A</button>
+      <div style="text-align:center; font-size:1rem; font-weight:700; margin:0.4rem 0; color:var(--gold);">— OR —</div>
+      <button class="choice b" id="choiceB" onclick="vote('B')">B</button>
+
+      <div id="results" class="hidden" style="margin-top:1rem;">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem;">VOTES SO FAR</div>
+          <div style="display:flex; justify-content:space-around; font-size:1.4rem; font-weight:700;">
+            <div>🅰️ <span id="aVotes">0</span></div>
+            <div>🅱️ <span id="bVotes">0</span></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      </div>
+
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.7rem;">End Game</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">DONE!</div>
+        <div class="prompt">🤔 Hope you settled some debates</div>
+        <div class="sub" id="rounds"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const Q = [
+      {a:"Attend Hogwarts for a year", b:"Visit Jurassic World for a day"},
+      {a:"Be best friends with Toothless", b:"Be best friends with Stitch — wait, wrong park... Be best friends with a Minion"},
+      {a:"Ride the Velocicoaster 5 times in a row", b:"Ride Hagrid's Motorbike 5 times in a row"},
+      {a:"Have a magic wand", b:"Have a Mario power-up"},
+      {a:"Spend a day in Diagon Alley", b:"Spend a day in Hogsmeade"},
+      {a:"Drink only butterbeer for a week", b:"Eat only minion bananas for a week"},
+      {a:"Get a private tour of Hogwarts", b:"Get a private tour of Super Nintendo World"},
+      {a:"Be sorted into Gryffindor", b:"Be sorted into Slytherin"},
+      {a:"Have Toothless as a pet", b:"Have a Minion as a pet"},
+      {a:"Ride the Hogwarts Express forever", b:"Drive a kart in Mario Kart forever"},
+      {a:"Be a wizard", b:"Be a superhero"},
+      {a:"Have invisibility cloak powers", b:"Have Spider-Man's web powers"},
+      {a:"Tame a velociraptor", b:"Tame a hippogriff"},
+      {a:"Be Owen Grady's raptor trainer apprentice", b:"Be Hagrid's magical creatures assistant"},
+      {a:"Get rescued from a T-Rex by Optimus Prime", b:"Get rescued from a T-Rex by the Hulk"},
+      {a:"Be in a Harry Potter movie as an extra", b:"Be in a Mario movie as an extra"},
+      {a:"Have a wand that does any spell", b:"Have a Pokeball that catches anyone (oh wait, different park)"},
+      {a:"Live in Hogwarts for a year", b:"Live in the Mushroom Kingdom for a year"},
+      {a:"Have Bumblebee as your car", b:"Have Doc Brown's DeLorean as your car"},
+      {a:"Get hugged by Shrek", b:"Get hugged by a Minion"},
+      {a:"Be in a Despicable Me-style heist crew", b:"Be in a Kung Fu Panda dojo"},
+      {a:"Sing in front of Buster Moon's audience", b:"Perform a wizard duel in front of McGonagall"},
+      {a:"Ride the Forbidden Journey 10 times", b:"Ride VelociCoaster 10 times"},
+      {a:"Spend a night locked in The Wizarding World", b:"Spend a night locked in Jurassic Park"},
+      {a:"Get a wand that picks you", b:"Get sorted by the Sorting Hat"},
+      {a:"Have a robot like Bumblebee that can transform", b:"Have a dragon like Toothless"},
+      {a:"Be cursed by a werewolf for one night", b:"Be turned into stone for one hour"},
+      {a:"Ride only kid rides for a week", b:"Ride only thrill coasters for a week"},
+      {a:"Live in Whoville at Christmas", b:"Live in Diagon Alley year-round"},
+      {a:"Win a wizard duel", b:"Win a Mario Kart race"},
+      {a:"Have all 7 Harry Potter books memorized", b:"Have all the Mario games beat 100%"},
+      {a:"Spend a week with the Minions", b:"Spend a week with the Trolls"},
+      {a:"Get a butterbeer ice cream", b:"Get a Pizza Planet pizza (wrong park... Krusty Burger from USF, oh wait — get a Mug O' Butterbeer)"},
+      {a:"Be Hermione's best friend", b:"Be Harry's best friend"},
+      {a:"Drive a real Mario Kart", b:"Ride a real Hogwarts Express"},
+      {a:"Be turned into a wizard for a year", b:"Be turned into a minion for a year"},
+      {a:"Be at the helm of the Black Pearl... oh wait, that's Disney. Be at the helm of the Hogwarts Express", b:"Be in the cockpit of Toothless during a flight"},
+      {a:"Have your photo taken with Voldemort", b:"Have your photo taken with Bowser"},
+      {a:"Battle Bowser in Mario Kart", b:"Battle a dragon in Wizarding duel"},
+      {a:"Live in Berk (How to Train Your Dragon)", b:"Live in Far Far Away (Shrek)"},
+      {a:"Get a butterbeer at Three Broomsticks", b:"Get pizza at Mama's Pizza Parlor (Mario)"},
+      {a:"Have Dobby as your house elf", b:"Have a Minion as your assistant"},
+      {a:"Visit Hogwarts in summer", b:"Visit Hogwarts in winter"},
+      {a:"Be Harry Potter (the chosen one)", b:"Be Mario (the plumber hero)"},
+      {a:"Ride the Knight Bus", b:"Ride the Hogwarts Express"},
+      {a:"Be a Death Eater for one Halloween", b:"Be a Stormtrooper for one Halloween"},
+      {a:"Time travel in the DeLorean", b:"Apparate in the wizarding world"},
+      {a:"Be in Slytherin with Draco", b:"Be in Gryffindor with the trio"},
+      {a:"Get Polyjuiced into anyone", b:"Get a Mario super star (invincibility) for a day"},
+      {a:"Have Hagrid babysit your kids", b:"Have a Minion babysit your kids"},
+      {a:"Win Triwizard Tournament", b:"Win a Quidditch World Cup"},
+      {a:"Train a baby dragon for one year", b:"Train a baby raptor for one year"},
+      {a:"Spend the day in Skull Island (with Kong)", b:"Spend the day in Mount Moon (with Pokémon — wrong park sorry)"},
+      {a:"Eat dinner at Three Broomsticks", b:"Eat dinner at Toothsome Chocolate Emporium"},
+      {a:"Be Hagrid for a day (giant size)", b:"Be a Minion for a day (tiny)"}
+    ];
+
+    let queue = [], current = null, count = 0;
+    let aVotes = 0, bVotes = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(Q); count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(Q);
+      current = queue.pop(); count++;
+      aVotes = 0; bVotes = 0;
+      document.getElementById('roundPill').textContent = 'Q ' + count;
+      document.getElementById('choiceA').textContent = '🅰️  ' + current.a;
+      document.getElementById('choiceB').textContent = '🅱️  ' + current.b;
+      document.getElementById('aVotes').textContent = '0';
+      document.getElementById('bVotes').textContent = '0';
+      document.getElementById('results').classList.add('hidden');
+    }
+
+    function vote(which) {
+      if (which === 'A') aVotes++; else bVotes++;
+      document.getElementById('aVotes').textContent = aVotes;
+      document.getElementById('bVotes').textContent = bVotes;
+      document.getElementById('results').classList.remove('hidden');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('rounds').textContent = count + ' question' + (count===1?'':'s') + ' answered';
+    }
+  </script>
+</body>
+</html>

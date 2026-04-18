@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Disney Categories</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">📋 Categories</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a Disney category. Take turns naming one thing in it (no repeats!). When someone can't think of one within 5 seconds, tap their name — they're out. Last person standing wins!
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
+      <div id="playerList" class="player-list"></div>
+      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+
+      <div style="margin-top:1rem;">
+        <label class="lbl">Time per turn</label>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-ghost" onclick="setTime(5)" id="t5">5s</button>
+          <button class="btn btn-ghost" onclick="setTime(8)" id="t8">8s</button>
+          <button class="btn btn-ghost" onclick="setTime(10)" id="t10">10s</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="alivePill">👥 0 left</div>
+        <div class="stat-pill" id="timerPill" style="font-size:1.4rem; min-width:90px; justify-content:center;">⏱ 5</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">CATEGORY</div>
+        <div class="prompt" id="catText">...</div>
+        <div class="sub" id="exampleText"></div>
+      </div>
+
+      <div class="card" style="text-align:center; margin-bottom:0.7rem;">
+        <div style="font-size:0.85rem; color:var(--muted);">CURRENT TURN</div>
+        <div id="currentPlayer" style="font-size:2rem; font-weight:800; color:var(--gold); margin-top:0.3rem;">Player</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-success btn-lg" onclick="success()">✅ Got One!</button>
+        <button class="btn btn-danger btn-lg" onclick="fail()">❌ Out!</button>
+      </div>
+      <button class="btn btn-warn btn-block" onclick="newCategory()" style="margin-top:0.7rem;">🔀 New Category</button>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.5rem;">End Game</button>
+
+      <h3 style="margin:1rem 0 0.5rem; font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players Still In</h3>
+      <div id="playersStatus" style="display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
+    </section>
+
+    <!-- End -->
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">WINNER!</div>
+        <div class="prompt" id="winnerText">🏆</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()" style="margin-top:0.8rem;">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const CATEGORIES = [
+      {name:"Disney Princesses", ex:"e.g., Belle, Ariel, Mulan"},
+      {name:"Disney Villains", ex:"e.g., Maleficent, Scar, Jafar"},
+      {name:"Pixar Movies", ex:"e.g., Up, Coco, Cars"},
+      {name:"Disney Sidekicks", ex:"e.g., Olaf, Sebastian, Mushu"},
+      {name:"Disney Animal Characters", ex:"e.g., Simba, Stitch, Pluto"},
+      {name:"Magic Kingdom Rides", ex:"e.g., Space Mountain, Pirates"},
+      {name:"EPCOT Rides or Pavilions", ex:"e.g., Soarin', Spaceship Earth"},
+      {name:"Disney Songs", ex:"e.g., Let It Go, Hakuna Matata"},
+      {name:"Toy Story Characters", ex:"e.g., Woody, Buzz, Jessie"},
+      {name:"Frozen Characters", ex:"e.g., Elsa, Anna, Olaf"},
+      {name:"Marvel Heroes", ex:"e.g., Iron Man, Spider-Man, Hulk"},
+      {name:"Star Wars Characters", ex:"e.g., Luke, Leia, Rey"},
+      {name:"Disney Movies (any era)", ex:"e.g., Bambi, Encanto, Frozen"},
+      {name:"Disney Foods/Snacks", ex:"e.g., churro, Dole Whip, turkey leg"},
+      {name:"Disney Castles or Locations", ex:"e.g., Cinderella's Castle, Atlantis"},
+      {name:"Disney Mice or Rats", ex:"e.g., Mickey, Remy, Jaq"},
+      {name:"Disney Dogs", ex:"e.g., Pluto, Dug, Bolt"},
+      {name:"Disney Movies set in the past (medieval/old)", ex:"e.g., Sleeping Beauty, Mulan"},
+      {name:"Disney Movies set in modern times", ex:"e.g., The Incredibles, Big Hero 6"},
+      {name:"Animated movies with talking animals", ex:"e.g., Zootopia, Lion King"},
+      {name:"Hollywood Studios Rides", ex:"e.g., Tower of Terror, Slinky Dog"},
+      {name:"Animal Kingdom Rides", ex:"e.g., Avatar Flight of Passage, Everest"},
+      {name:"Disney Princes/Heroes", ex:"e.g., Aladdin, Hercules, Flynn"},
+      {name:"Disney Magical Items", ex:"e.g., Genie's lamp, Cinderella's slipper"},
+      {name:"Disney Sequels", ex:"e.g., Frozen 2, Toy Story 3"},
+      {name:"Cars Characters", ex:"e.g., Lightning McQueen, Mater"},
+      {name:"Lion King Characters", ex:"e.g., Simba, Mufasa, Scar, Nala"},
+      {name:"Disney Musicals (movies that sing a lot)", ex:"e.g., Encanto, Frozen, Moana"},
+      {name:"Things you'd see in a Disney parade", ex:"e.g., float, princess, marching band"},
+      {name:"Universal Park Rides", ex:"e.g., Hagrid's, Velocicoaster"},
+      {name:"Disney Pixar Animals", ex:"e.g., Sully, Remy, Dory"},
+      {name:"Disney Movies with a princess", ex:"e.g., Tangled, Frozen, Mulan"},
+      {name:"Disney Cast Member Roles", ex:"e.g., character, ride operator, cleaner"}
+    ];
+
+    const STORAGE_KEY = 'cat_players';
+    const DEFAULT = ['Player 1','Player 2','Player 3'];
+    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
+    let alive = [], turnIdx = 0, queue = [], current = null;
+    let timer = null, remaining = 5, turnLength = 5;
+
+    function setTime(n) {
+      turnLength = n;
+      ['t5','t8','t10'].forEach(id => { const el=document.getElementById(id); el.style.background='transparent'; el.style.color='white'; });
+      const cur = document.getElementById('t'+n);
+      cur.style.background = 'var(--gold)'; cur.style.color = '#1e2a38';
+    }
+    setTime(5);
+
+    function renderPlayers() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach((name, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.innerHTML = `
+          <input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" />
+          <button class="remove" onclick="removePlayer(${i})">✕</button>
+        `;
+        list.appendChild(row);
+      });
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function updPlayer(i, v) { players[i] = v; save(); }
+    function addPlayer() { players.push(''); renderPlayers(); save(); }
+    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      const cleaned = players.map(p => p.trim()).filter(Boolean);
+      if (cleaned.length < 2) { alert('Need at least 2 players.'); return; }
+      players = cleaned;
+      save();
+      alive = players.slice();
+      turnIdx = 0;
+      queue = shuffle(CATEGORIES);
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      newCategory();
+    }
+
+    function newCategory() {
+      if (queue.length === 0) queue = shuffle(CATEGORIES);
+      current = queue.pop();
+      document.getElementById('catText').textContent = current.name;
+      document.getElementById('exampleText').textContent = current.ex;
+      // skip eliminated players
+      while (turnIdx < alive.length && !alive[turnIdx]) turnIdx = (turnIdx + 1) % alive.length;
+      renderTurn();
+    }
+
+    function renderTurn() {
+      document.getElementById('alivePill').textContent = '👥 ' + alive.length + ' left';
+      document.getElementById('currentPlayer').textContent = alive[turnIdx];
+      const ps = document.getElementById('playersStatus');
+      ps.innerHTML = '';
+      alive.forEach((p, i) => {
+        const c = document.createElement('div');
+        c.className = 'chip';
+        c.style.background = i === turnIdx ? 'var(--gold)' : 'rgba(255,255,255,0.12)';
+        c.style.color = i === turnIdx ? '#1e2a38' : 'white';
+        c.textContent = p;
+        ps.appendChild(c);
+      });
+      startTimer();
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      remaining = turnLength;
+      document.getElementById('timerPill').textContent = '⏱ ' + remaining;
+      timer = setInterval(() => {
+        remaining--;
+        document.getElementById('timerPill').textContent = '⏱ ' + remaining;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          // visual cue but don't auto-eliminate; user decides
+          document.getElementById('timerPill').textContent = '⏰ Out?';
+        }
+      }, 1000);
+    }
+
+    function success() {
+      clearInterval(timer);
+      turnIdx = (turnIdx + 1) % alive.length;
+      renderTurn();
+    }
+
+    function fail() {
+      clearInterval(timer);
+      const out = alive[turnIdx];
+      alive.splice(turnIdx, 1);
+      if (alive.length <= 1) { endGame(); return; }
+      if (turnIdx >= alive.length) turnIdx = 0;
+      // start a NEW category for the next round (different topic)
+      newCategory();
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('winnerText').textContent = alive.length > 0 ? '🏆 ' + alive[0] : '🤷 No winner';
+    }
+
+    renderPlayers();
+  </script>
+</body>
+</html>

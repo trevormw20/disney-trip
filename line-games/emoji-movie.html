@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Emoji Movie Guess</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎬 Emoji Movie</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows an emoji puzzle. First person to shout the right Disney movie wins the round — tap "Reveal" to confirm. Track scores yourself or just play for fun!
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Puzzle 1</div>
+        <div class="stat-pill" id="diffPill">⭐</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">DECODE THIS DISNEY MOVIE</div>
+        <div class="prompt" id="emojiText" style="font-size:clamp(3rem, 14vw, 5rem); line-height:1.4;">🎬</div>
+        <div class="sub" id="hintText"></div>
+      </div>
+
+      <div class="reveal-area" id="answer">Tap reveal</div>
+
+      <div class="btn-row">
+        <button class="btn btn-warn btn-lg" id="hintBtn" onclick="showHint()">💡 Hint</button>
+        <button class="btn btn-success btn-lg" onclick="reveal()">✨ Reveal</button>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.6rem;">End Game</button>
+    </section>
+
+    <!-- End -->
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">GAME OVER</div>
+        <div class="prompt">🎬 Thanks for playing!</div>
+        <div class="sub" id="rounds"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const PUZZLES = [
+      {emoji:"🦁👑", answer:"The Lion King", hint:"A young cub becomes king", d:1},
+      {emoji:"❄️👯‍♀️👸", answer:"Frozen", hint:"Two royal sisters", d:1},
+      {emoji:"🧜‍♀️🦀🐠", answer:"The Little Mermaid", hint:"Under the sea", d:1},
+      {emoji:"🌹🥀🐺🏰", answer:"Beauty and the Beast", hint:"A tale as old as time", d:1},
+      {emoji:"🧞‍♂️🪔🐅", answer:"Aladdin", hint:"Three wishes", d:1},
+      {emoji:"🤠🚀🧸", answer:"Toy Story", hint:"To infinity...", d:1},
+      {emoji:"👽🏝️🏄‍♀️", answer:"Lilo & Stitch", hint:"Ohana means family", d:1},
+      {emoji:"🌊🛶👸💪", answer:"Moana", hint:"Wayfinder", d:1},
+      {emoji:"👹🚪🌀😱", answer:"Monsters Inc", hint:"Scarers in a city", d:2},
+      {emoji:"🐠🏊‍♂️🦈", answer:"Finding Nemo", hint:"Just keep swimming", d:1},
+      {emoji:"🦸‍♂️👨‍👩‍👧‍👦💪", answer:"The Incredibles", hint:"Super family", d:2},
+      {emoji:"🤖❤️🌍", answer:"Wall-E", hint:"Lonely robot", d:2},
+      {emoji:"🐀👨‍🍳🍝", answer:"Ratatouille", hint:"Anyone can cook", d:1},
+      {emoji:"🏠🎈👴👦", answer:"Up", hint:"Adventure is out there", d:1},
+      {emoji:"😀😢😡🧠", answer:"Inside Out", hint:"Emotions personified", d:2},
+      {emoji:"💀🎸👨‍👦🇲🇽", answer:"Coco", hint:"Remember me", d:2},
+      {emoji:"🐸👸🎺🎷", answer:"The Princess and the Frog", hint:"New Orleans", d:2},
+      {emoji:"👸🐉🇨🇳⚔️", answer:"Mulan", hint:"Brings honor", d:2},
+      {emoji:"👸💇‍♀️🗼", answer:"Tangled", hint:"Long blonde hair", d:1},
+      {emoji:"🦌👶🌳", answer:"Bambi", hint:"Forest animals", d:2},
+      {emoji:"🐶🐶🐶🔢", answer:"101 Dalmatians", hint:"Lots of spots", d:2},
+      {emoji:"🐻🐯🐷🐰🐴", answer:"Winnie the Pooh", hint:"Hundred-acre wood", d:2},
+      {emoji:"👮‍♀️🐰🦊", answer:"Zootopia", hint:"Try everything", d:2},
+      {emoji:"🏠🪄🇨🇴👧", answer:"Encanto", hint:"Magical Madrigal family", d:2},
+      {emoji:"🐉👸🇹🇭", answer:"Raya and the Last Dragon", hint:"Kumandra", d:3},
+      {emoji:"🐟🇮🇹🌊👦", answer:"Luca", hint:"Sea creatures in disguise", d:3},
+      {emoji:"🐼🇨🇦👧", answer:"Turning Red", hint:"Boy band fan", d:3},
+      {emoji:"🧙‍♂️🚙👬", answer:"Onward", hint:"Bring back dad for a day", d:3},
+      {emoji:"🎹👨‍🦱✨🐱", answer:"Soul", hint:"Jazz musician", d:3},
+      {emoji:"🏴‍☠️⚔️🌊", answer:"Pirates of the Caribbean", hint:"Captain Jack", d:1},
+      {emoji:"☂️🇬🇧👩", answer:"Mary Poppins", hint:"Practically perfect", d:2},
+      {emoji:"🚗🏁👀", answer:"Cars", hint:"Lightning McQueen", d:1},
+      {emoji:"🏹🐻🏴󠁧󠁢󠁳󠁣󠁴󠁿", answer:"Brave", hint:"Scottish princess", d:2},
+      {emoji:"🎃🤴💀🐶", answer:"The Nightmare Before Christmas", hint:"Halloween Town", d:2},
+      {emoji:"⭐⚔️🚀👾", answer:"Star Wars", hint:"A galaxy far far away", d:1},
+      {emoji:"🦅🇺🇸🛡️", answer:"Captain America", hint:"Star-spangled hero", d:2},
+      {emoji:"🕷️👨‍🎓🕸️", answer:"Spider-Man", hint:"Web slinger", d:1},
+      {emoji:"🐭🚂🎩", answer:"Mickey & Minnie's Runaway Railway", hint:"It's a famous Hollywood Studios ride", d:3},
+      {emoji:"🪞🍎7️⃣👸", answer:"Snow White", hint:"Fairest of them all", d:1},
+      {emoji:"👠🎃🐭🐭", answer:"Cinderella", hint:"Glass slipper", d:1},
+      {emoji:"😴🌹🧚‍♀️🧚‍♀️🧚‍♀️", answer:"Sleeping Beauty", hint:"100 year nap", d:2},
+      {emoji:"🧚🏴‍☠️👦✈️", answer:"Peter Pan", hint:"Never grow up", d:1},
+      {emoji:"🪵👃🐳🦗", answer:"Pinocchio", hint:"A wooden boy", d:2},
+      {emoji:"🐻🐍🐯👦🌴", answer:"The Jungle Book", hint:"Bare necessities", d:2},
+      {emoji:"🦔🚀🧸", answer:"Wreck-It Ralph", hint:"Arcade hero", d:2},
+      {emoji:"🤖🎈🥋", answer:"Big Hero 6", hint:"Inflatable friend", d:2},
+      {emoji:"🐯🐵👦🌿🇮🇳", answer:"The Jungle Book", hint:"Mowgli's friends", d:2},
+      {emoji:"💪⚡🐎🇬🇷", answer:"Hercules", hint:"Zero to hero", d:2},
+      {emoji:"🌽🍂🐶🌽", answer:"Pocahontas", hint:"Colors of the wind", d:2},
+      {emoji:"🤴🐸💋", answer:"The Princess and the Frog", hint:"Tiana kisses one", d:2},
+      {emoji:"🐭🎩🧙‍♂️", answer:"Fantasia", hint:"Sorcerer's apprentice", d:3}
+    ];
+
+    let queue = [];
+    let current = null;
+    let count = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(PUZZLES);
+      count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(PUZZLES);
+      current = queue.pop();
+      count++;
+      document.getElementById('roundPill').textContent = 'Puzzle ' + count;
+      document.getElementById('diffPill').textContent = '⭐'.repeat(current.d);
+      document.getElementById('emojiText').textContent = current.emoji;
+      document.getElementById('hintText').textContent = '';
+      document.getElementById('answer').textContent = 'Tap reveal';
+      document.getElementById('answer').classList.add('hidden-text');
+      document.getElementById('hintBtn').disabled = false;
+    }
+
+    function showHint() {
+      document.getElementById('hintText').textContent = '💡 ' + current.hint;
+      document.getElementById('hintBtn').disabled = true;
+    }
+
+    function reveal() {
+      document.getElementById('answer').textContent = current.answer;
+      document.getElementById('answer').classList.remove('hidden-text');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('rounds').textContent = count + ' puzzle' + (count===1?'':'s') + ' played';
+    }
+  </script>
+</body>
+</html>

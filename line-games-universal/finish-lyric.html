@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Finish the Line</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎤 Finish the Line</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows the start of a Universal movie song lyric OR a famous quote — first to finish it wins! Tap "Reveal" to confirm.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Line 1</div>
+        <div class="stat-pill" id="typePill">🎵 SONG</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label" id="sourceLabel">SOURCE</div>
+        <div class="prompt" id="lineText" style="font-size:clamp(1.3rem, 4.8vw, 1.8rem); line-height:1.4; font-style:italic;">"..."</div>
+      </div>
+
+      <div class="reveal-area" id="answer">Tap reveal</div>
+
+      <div class="btn-row">
+        <button class="btn btn-warn btn-lg" onclick="revealSource()">🎬 Show Source</button>
+        <button class="btn btn-success btn-lg" onclick="revealAnswer()">✨ Reveal</button>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.6rem;">End Game</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">DONE!</div>
+        <div class="prompt">🎤 Great lines!</div>
+        <div class="sub" id="rounds"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const LINES = [
+      // Movie quotes (iconic)
+      {type:"quote", source:"Harry Potter (Hagrid to Harry)", line:"You're a wizard,", answer:"Harry"},
+      {type:"quote", source:"Jurassic Park (Ian Malcolm)", line:"Life... uh... finds a", answer:"way"},
+      {type:"quote", source:"Shrek", line:"GET OUT OF MY", answer:"swamp"},
+      {type:"quote", source:"E.T. the Extra-Terrestrial", line:"E.T. phone", answer:"home"},
+      {type:"quote", source:"Back to the Future (Doc Brown)", line:"Where we're going, we don't need", answer:"roads"},
+      {type:"quote", source:"Super Mario Bros.", line:"It's-a-me,", answer:"Mario"},
+      {type:"quote", source:"Despicable Me (Agnes)", line:"It's so", answer:"fluffy!"},
+      {type:"quote", source:"Shrek", line:"Ogres are like", answer:"onions"},
+      {type:"quote", source:"How to Train Your Dragon", line:"This is", answer:"Berk"},
+      {type:"quote", source:"Harry Potter and the Sorcerer's Stone", line:"It does not do well to dwell on dreams and forget to", answer:"live"},
+      {type:"quote", source:"Harry Potter and the Chamber of Secrets", line:"Dobby is a", answer:"free elf"},
+      {type:"quote", source:"Jurassic Park (John Hammond)", line:"Welcome to", answer:"Jurassic Park"},
+      {type:"quote", source:"Kung Fu Panda (Oogway)", line:"Yesterday is history, tomorrow is a mystery, today is a", answer:"gift"},
+      {type:"quote", source:"Madagascar (King Julien)", line:"I like to", answer:"move it move it"},
+      {type:"quote", source:"Back to the Future", line:"Great", answer:"Scott!"},
+      {type:"quote", source:"Jaws", line:"You're gonna need a bigger", answer:"boat"},
+      {type:"quote", source:"Spider-Man (Uncle Ben)", line:"With great power comes great", answer:"responsibility"},
+      {type:"quote", source:"Frankenstein (classic)", line:"It's", answer:"alive!"},
+      {type:"quote", source:"Shrek (Donkey)", line:"Are we there", answer:"yet?"},
+      {type:"quote", source:"Harry Potter (Dumbledore)", line:"Happiness can be found even in the darkest of times, if one only remembers to turn on the", answer:"light"},
+      {type:"quote", source:"Despicable Me", line:"Bee Doh,", answer:"Bee Doh"},
+      {type:"quote", source:"Curious George", line:"The Man with the Yellow", answer:"Hat"},
+      {type:"quote", source:"The Lorax", line:"I am the Lorax. I speak for the", answer:"trees"},
+      {type:"quote", source:"Transformers", line:"Autobots,", answer:"roll out!"},
+      {type:"quote", source:"Transformers (Optimus Prime)", line:"Freedom is the right of all sentient", answer:"beings"},
+      {type:"quote", source:"Ghostbusters (Universal ride legacy)", line:"Who ya gonna", answer:"call?"},
+      {type:"quote", source:"The Mummy", line:"Death is only the", answer:"beginning"},
+      {type:"quote", source:"Harry Potter (Dumbledore)", line:"It is our choices that show what we truly are, far more than our", answer:"abilities"},
+      {type:"quote", source:"Jurassic World", line:"They're not", answer:"dinosaurs"},
+      {type:"quote", source:"Shrek", line:"Somebody once told me the world is gonna", answer:"roll me"},
+      {type:"quote", source:"How to Train Your Dragon", line:"It's not so much what you look like, it's what's", answer:"inside"},
+
+      // Songs from Universal movies
+      {type:"song", source:"I'm a Believer (Shrek)", line:"Then I saw her face,", answer:"now I'm a believer"},
+      {type:"song", source:"All Star (Shrek)", line:"Somebody once told me the world is gonna roll me, I ain't the sharpest", answer:"tool in the shed"},
+      {type:"song", source:"Happy (Despicable Me 2)", line:"Because I'm happy, clap along if you feel like", answer:"a room without a roof"},
+      {type:"song", source:"Banana Song (Minions)", line:"Ba-na-na,", answer:"po-ta-to-na"},
+      {type:"song", source:"Can't Stop the Feeling (Trolls)", line:"I got this feeling inside my bones, it goes electric, wavy when I", answer:"turn it on"},
+      {type:"song", source:"True Colors (Trolls)", line:"I see your true colors shining", answer:"through"},
+      {type:"song", source:"Kung Fu Fighting (Kung Fu Panda)", line:"Everybody was Kung Fu", answer:"fighting"},
+      {type:"song", source:"Eye of the Tiger (Sing)", line:"It's the eye of the", answer:"tiger"},
+      {type:"song", source:"Faith (Sing)", line:"Baby, I got", answer:"faith"},
+      {type:"song", source:"You're a Mean One, Mr. Grinch", line:"You're a mean one, Mr.", answer:"Grinch"},
+      {type:"song", source:"Welcome Christmas (The Grinch)", line:"Welcome Christmas, come this", answer:"way"},
+      {type:"song", source:"Afro Circus (Madagascar 3)", line:"Afro circus, afro circus, afro", answer:"polka dot polka dot afro"},
+      {type:"song", source:"I Like to Move It (Madagascar)", line:"I like to move it,", answer:"move it"},
+      {type:"song", source:"I'm Still Standing (Sing)", line:"Don't you know I'm still", answer:"standing"},
+      {type:"song", source:"Don't You Worry 'Bout a Thing (Sing)", line:"Don't you worry 'bout a", answer:"thing"},
+      {type:"song", source:"Super Mario Bros. theme", line:"Da da da daa, da da da (hum it!)", answer:"Mario theme song — dun dun dun dun-dun dun..."},
+      {type:"song", source:"Hedwig's Theme (Harry Potter)", line:"Dun dun dun, dun dun DUN dun (hum it!)", answer:"Harry Potter — Hedwig's Theme"},
+      {type:"song", source:"Rise Up (Trolls)", line:"I'ma keep on movin',", answer:"keep on groovin'"},
+      {type:"song", source:"Hallelujah (Shrek — Rufus Wainwright version)", line:"I've heard there was a secret chord that David played and it pleased", answer:"the Lord"},
+      {type:"song", source:"Bad (Sing)", line:"Because I'm bad, I'm", answer:"bad"},
+      {type:"song", source:"Set It All Free (Sing — Ash)", line:"All my life, I've been", answer:"waiting for"},
+      {type:"song", source:"Moves Like Jagger (Sing 2)", line:"I've got the moves like", answer:"Jagger"},
+
+      // Rides/quotes
+      {type:"quote", source:"Jurassic World (Owen Grady)", line:"Blue,", answer:"hold!"},
+      {type:"quote", source:"Men in Black", line:"Here come the", answer:"Men in Black"},
+      {type:"quote", source:"Harry Potter (Hermione)", line:"It's LeviOsa, not", answer:"LeviosA"}
+    ];
+
+    let queue = [], current = null, count = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(LINES); count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(LINES);
+      current = queue.pop(); count++;
+      document.getElementById('roundPill').textContent = 'Line ' + count;
+      document.getElementById('typePill').textContent = current.type === 'song' ? '🎵 SONG' : '💬 QUOTE';
+      document.getElementById('sourceLabel').textContent = '🔒 SOURCE HIDDEN';
+      document.getElementById('lineText').textContent = '"' + current.line + '..."';
+      document.getElementById('answer').textContent = 'Tap reveal';
+      document.getElementById('answer').classList.add('hidden-text');
+    }
+
+    function revealSource() {
+      document.getElementById('sourceLabel').textContent = current.source.toUpperCase();
+    }
+
+    function revealAnswer() {
+      document.getElementById('answer').textContent = '"...' + current.answer + '"';
+      document.getElementById('answer').classList.remove('hidden-text');
+      document.getElementById('sourceLabel').textContent = current.source.toUpperCase();
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('rounds').textContent = count + ' line' + (count===1?'':'s') + ' played';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Who In The Group?</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">👯 Who In The Group?</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Add everyone playing. Each round shows a Disney-themed question. Everyone points at one person — tap whoever got the most votes. Most votes after 10 rounds wins (or loses, depending on the question 😉).
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
+      <div id="playerList" class="player-list"></div>
+      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start Game</button>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 10</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">EVERYONE POINT AT...</div>
+        <div class="prompt" id="qText">...</div>
+      </div>
+
+      <div style="font-size:0.85rem; color:var(--muted); text-align:center; margin-bottom:0.6rem;">Tap who got the most votes:</div>
+      <div id="voteButtons" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+
+      <button class="btn btn-ghost btn-block" onclick="skipQ()" style="margin-top:0.7rem;">Skip Question</button>
+    </section>
+
+    <!-- End -->
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORES</div>
+        <div class="prompt" id="winnerText">🏆</div>
+      </div>
+      <ol id="scoreboard" class="scoreboard"></ol>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()" style="margin-top:0.8rem;">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const QUESTIONS = [
+      "...the most likely to cry on a Disney ride",
+      "...the first one to need a snack break",
+      "...the one who'd memorize the entire park map",
+      "...the most likely to get lost",
+      "...the first to fall asleep on the bus",
+      "...the loudest screamer on a coaster",
+      "...the most likely to wear matching Disney ears",
+      "...the first to break their phone in line",
+      "...the most likely to spend all their money in the gift shop",
+      "...the most likely to take 100 photos of every castle",
+      "...the one who'd still be singing 'It's a Small World' tomorrow",
+      "...the biggest fan of Mickey-shaped food",
+      "...the most likely to get lost in EPCOT",
+      "...the one who'd skip rides to meet characters",
+      "...the most likely to overpack",
+      "...the one who'd plan every single minute",
+      "...the most likely to nap in a stroller (even adults)",
+      "...the first to want a churro",
+      "...the loudest singer in the parade",
+      "...the most likely to get sunburned",
+      "...the most likely to ride Tower of Terror 5 times in a row",
+      "...the one who'd cry at the fireworks show",
+      "...the biggest Star Wars fan",
+      "...the biggest Frozen fan",
+      "...the most likely to wear pajamas to the park",
+      "...the most likely to lose their MagicBand",
+      "...the one who knows every Disney song by heart",
+      "...the most likely to ride 'It's a Small World' on purpose",
+      "...the one who'd quote Buzz Lightyear all day",
+      "...the most likely to dress as a princess",
+      "...the most likely to take a picture with every cast member",
+      "...the first to complain about the heat",
+      "...the most likely to sneak in extra snacks",
+      "...the one who would wait 4 hours for Rise of the Resistance",
+      "...the most likely to high-five a character",
+      "...the first to plan dinner reservations 6 months ahead",
+      "...the most likely to wave at the monorail",
+      "...the one who'd ride Dumbo without complaining",
+      "...the loudest 'Yo Ho Ho!' on Pirates",
+      "...the most likely to buy a Mickey balloon and lose it",
+      "...the most likely to ride 'Small World' twice in a row",
+      "...the one who'd skip lunch to ride one more time",
+      "...the biggest backseat ride driver",
+      "...the most likely to hum theme music all day",
+      "...the most likely to suggest a souvenir for everyone",
+      "...the one who'd win a Disney trivia contest",
+      "...the most likely to chase Mickey for a hug",
+      "...the most likely to wear Crocs to the park",
+      "...the most likely to insist on early arrival",
+      "...the one who'd own three pairs of Mickey ears"
+    ];
+
+    const STORAGE_KEY = 'whoingroup_players';
+    const DEFAULT = ['Trevor','Niki','Rick','Alicia','Mikey','Mila'];
+
+    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
+    let scores = {}, qQueue = [], qIdx = 0, totalRounds = 10;
+
+    function renderPlayers() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach((name, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.innerHTML = `
+          <input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" />
+          <button class="remove" onclick="removePlayer(${i})">✕</button>
+        `;
+        list.appendChild(row);
+      });
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function updPlayer(i, v) { players[i] = v; save(); }
+    function addPlayer() { players.push(''); renderPlayers(); save(); }
+    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      const cleaned = players.map(p => p.trim()).filter(Boolean);
+      if (cleaned.length < 2) { alert('Need at least 2 players.'); return; }
+      players = cleaned;
+      save();
+      scores = {}; players.forEach(p => scores[p] = 0);
+      qQueue = shuffle(QUESTIONS).slice(0, totalRounds);
+      qIdx = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      showQ();
+    }
+
+    function showQ() {
+      if (qIdx >= qQueue.length) { endGame(); return; }
+      document.getElementById('roundPill').textContent = `Round ${qIdx+1} / ${qQueue.length}`;
+      document.getElementById('qText').textContent = qQueue[qIdx];
+      const vb = document.getElementById('voteButtons');
+      vb.innerHTML = '';
+      players.forEach(p => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-primary btn-lg';
+        b.textContent = p;
+        b.onclick = () => vote(p);
+        vb.appendChild(b);
+      });
+      const tie = document.createElement('button');
+      tie.className = 'btn btn-warn';
+      tie.textContent = "🤝 It's a tie / no one";
+      tie.onclick = () => { qIdx++; showQ(); };
+      vb.appendChild(tie);
+    }
+
+    function vote(p) { scores[p]++; qIdx++; showQ(); }
+    function skipQ() { qIdx++; showQ(); }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+      const max = sorted[0][1];
+      const winners = sorted.filter(([_,v]) => v === max).map(([n]) => n);
+      document.getElementById('winnerText').textContent = max === 0
+        ? '🤷 Nobody got picked!'
+        : '🏆 ' + winners.join(' & ');
+      const list = document.getElementById('scoreboard');
+      list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} pt${v===1?'':'s'}</span></li>`).join('');
+    }
+
+    renderPlayers();
+  </script>
+</body>
+</html>

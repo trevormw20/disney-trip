@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Emoji Movie Guess</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎬 Emoji Movie</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows an emoji puzzle. First person to shout the right Universal-themed movie wins the round — tap "Reveal" to confirm.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Puzzle 1</div>
+        <div class="stat-pill" id="diffPill">⭐</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">DECODE THIS MOVIE</div>
+        <div class="prompt" id="emojiText" style="font-size:clamp(3rem, 14vw, 5rem); line-height:1.4;">🎬</div>
+        <div class="sub" id="hintText"></div>
+      </div>
+
+      <div class="reveal-area" id="answer">Tap reveal</div>
+
+      <div class="btn-row">
+        <button class="btn btn-warn btn-lg" id="hintBtn" onclick="showHint()">💡 Hint</button>
+        <button class="btn btn-success btn-lg" onclick="reveal()">✨ Reveal</button>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.6rem;">End Game</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">GAME OVER</div>
+        <div class="prompt">🎬 Thanks for playing!</div>
+        <div class="sub" id="rounds"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const PUZZLES = [
+      {emoji:"⚡👦🧙‍♂️📚", answer:"Harry Potter", hint:"The boy who lived", d:1},
+      {emoji:"🦖🦕🏝️🧪", answer:"Jurassic Park", hint:"Welcome to a dino island", d:1},
+      {emoji:"🦖🌍🦕🏃", answer:"Jurassic World", hint:"The reboot of a dino park", d:2},
+      {emoji:"🟢👹🐴🏰", answer:"Shrek", hint:"Get out of my swamp!", d:1},
+      {emoji:"🐉🛡️🏔️", answer:"How to Train Your Dragon", hint:"Hiccup and his Night Fury", d:1},
+      {emoji:"🐼🥋🇨🇳", answer:"Kung Fu Panda", hint:"Po becomes the Dragon Warrior", d:1},
+      {emoji:"🦁🦓🦒🦛🌴", answer:"Madagascar", hint:"Zoo animals on an island", d:1},
+      {emoji:"🌈🎵🤗", answer:"Trolls", hint:"Pop music + happy hair", d:2},
+      {emoji:"🐱👢⚔️", answer:"Puss in Boots", hint:"Fearless cat hero", d:2},
+      {emoji:"🟡👨‍🦲👧👧👧", answer:"Despicable Me", hint:"Villain becomes a dad", d:1},
+      {emoji:"🟡👖👁️🍌", answer:"Minions", hint:"Bee doh bee doh", d:1},
+      {emoji:"🎤🐨🐷🐘", answer:"Sing", hint:"Animals enter a singing contest", d:2},
+      {emoji:"🌳🟠😡", answer:"The Lorax", hint:"He speaks for the trees", d:2},
+      {emoji:"🟢😠🎄🐶", answer:"The Grinch", hint:"He hates Christmas", d:1},
+      {emoji:"🐶🏠🦜", answer:"The Secret Life of Pets", hint:"What pets do when you're away", d:2},
+      {emoji:"👽🌕🚲🌟", answer:"E.T.", hint:"Phone home", d:1},
+      {emoji:"⏰🚗⚡1955", answer:"Back to the Future", hint:"DeLorean time travel", d:1},
+      {emoji:"🦍🏝️🏙️", answer:"King Kong", hint:"Giant ape on Skull Island", d:2},
+      {emoji:"🧟‍♂️⚡🔬", answer:"Frankenstein", hint:"Reanimated monster", d:2},
+      {emoji:"🧛‍♂️🦇🌙", answer:"Dracula", hint:"Vampire count", d:1},
+      {emoji:"🧻🏺🐍", answer:"The Mummy", hint:"Cursed Egyptian", d:2},
+      {emoji:"🕷️👨‍🎓🕸️🏙️", answer:"Spider-Man", hint:"Friendly neighborhood hero", d:1},
+      {emoji:"💚💪😡🟢", answer:"Hulk", hint:"Don't make him angry", d:1},
+      {emoji:"🐺👨‍🎓✂️", answer:"X-Men", hint:"Mutant heroes", d:2},
+      {emoji:"🚗🤖🇺🇸", answer:"Transformers", hint:"Robots in disguise", d:1},
+      {emoji:"🚗💛🤖", answer:"Bumblebee", hint:"Yellow Autobot", d:2},
+      {emoji:"🐱🎩🟥⬜🟥", answer:"The Cat in the Hat", hint:"Dr. Seuss classic", d:1},
+      {emoji:"🐘👂👀", answer:"Horton Hears a Who", hint:"A faithful elephant", d:2},
+      {emoji:"🐵👨🟡🎩", answer:"Curious George", hint:"Mischievous monkey", d:1},
+      {emoji:"👶💼🍼", answer:"The Boss Baby", hint:"Suit-wearing infant", d:2},
+      {emoji:"🦸‍♂️🟦🟢👨‍🦲", answer:"Megamind", hint:"Blue-headed villain turns hero", d:3},
+      {emoji:"🐝🍯⚖️", answer:"Bee Movie", hint:"Bees sue humans", d:3},
+      {emoji:"🦝🐢🌳", answer:"Over the Hedge", hint:"Suburban critters", d:3},
+      {emoji:"🦖👦🌋", answer:"The Croods", hint:"Prehistoric family", d:3},
+      {emoji:"🐎🐴🌅", answer:"Spirit", hint:"A wild horse story", d:3},
+      {emoji:"🍄🟥🔧🟥", answer:"The Super Mario Bros. Movie", hint:"It's-a-me!", d:1},
+      {emoji:"🐻☔🇬🇧", answer:"Paddington", hint:"Bear from Peru in London", d:2},
+      {emoji:"🐰🐶🥚🌸", answer:"Hop", hint:"Easter Bunny movie", d:3},
+      {emoji:"🐰🦆🌌👬", answer:"Despicable Me 2", hint:"Gru meets a spy", d:2},
+      {emoji:"🟡🐱👢⚔️🎩", answer:"Puss in Boots: The Last Wish", hint:"9 lives left", d:3},
+      {emoji:"🌍🐺🟢🟥", answer:"Madagascar: Escape 2 Africa", hint:"Madagascar sequel", d:3},
+      {emoji:"🐉🛡️🏝️➕", answer:"How to Train Your Dragon 2", hint:"Hiccup older", d:3},
+      {emoji:"🟢👹🌹💍", answer:"Shrek 2", hint:"Meet the in-laws", d:2},
+      {emoji:"🎵🌈🌍🎤", answer:"Trolls World Tour", hint:"Different music genres", d:3},
+      {emoji:"🐧🐧🐧🇲🇩", answer:"Penguins of Madagascar", hint:"Spy penguins", d:3},
+      {emoji:"⚡⚡🧙‍♂️🦌⚱️", answer:"Harry Potter and the Goblet of Fire", hint:"Triwizard Tournament", d:3},
+      {emoji:"⚡🧙‍♂️💀🧝‍♂️🐍", answer:"Harry Potter and the Deathly Hallows", hint:"Final Harry Potter book", d:3},
+      {emoji:"⚡🧙‍♂️🐍🏰", answer:"Harry Potter and the Chamber of Secrets", hint:"Basilisk lurks", d:2},
+      {emoji:"🦖🦖🌋🏝️", answer:"Jurassic World: Fallen Kingdom", hint:"Volcano erupts", d:3},
+      {emoji:"🦖🌍👑", answer:"Jurassic World Dominion", hint:"Dinos rule the earth", d:3}
+    ];
+
+    let queue = [], current = null, count = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(PUZZLES); count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(PUZZLES);
+      current = queue.pop(); count++;
+      document.getElementById('roundPill').textContent = 'Puzzle ' + count;
+      document.getElementById('diffPill').textContent = '⭐'.repeat(current.d);
+      document.getElementById('emojiText').textContent = current.emoji;
+      document.getElementById('hintText').textContent = '';
+      document.getElementById('answer').textContent = 'Tap reveal';
+      document.getElementById('answer').classList.add('hidden-text');
+      document.getElementById('hintBtn').disabled = false;
+    }
+
+    function showHint() {
+      document.getElementById('hintText').textContent = '💡 ' + current.hint;
+      document.getElementById('hintBtn').disabled = true;
+    }
+
+    function reveal() {
+      document.getElementById('answer').textContent = current.answer;
+      document.getElementById('answer').classList.remove('hidden-text');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('rounds').textContent = count + ' puzzle' + (count===1?'':'s') + ' played';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Universal Charades</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎭 Charades</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          One person holds the phone facing the group. Tap a category, then act out each prompt without speaking — others guess. Use the buttons when they get it right or want to skip.
+        </p>
+      </div>
+
+      <h3 style="margin:1.5rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Category</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
+        <button class="btn btn-primary" onclick="startCat('characters')">🧑‍🎤 Characters</button>
+        <button class="btn btn-success" onclick="startCat('movies')">🎬 Movies</button>
+        <button class="btn btn-warn" onclick="startCat('rides')">🎢 Rides</button>
+        <button class="btn" onclick="startCat('all')">🎲 Everything</button>
+      </div>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="catPill">🎭</div>
+        <div class="stat-pill" id="scorePill">✅ 0</div>
+        <div class="stat-pill" id="skipPill">⏭ 0</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label" id="promptLabel">CHARACTER</div>
+        <div class="prompt" id="promptText">Ready?</div>
+        <div class="sub" id="promptHint"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-danger btn-lg" onclick="skip()">⏭ Skip</button>
+        <button class="btn btn-success btn-lg" onclick="correct()">✅ Got it!</button>
+      </div>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.7rem;">End Round</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">ROUND OVER</div>
+        <div class="prompt" id="finalScore">0 correct</div>
+        <div class="sub" id="finalSkips">0 skipped</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const DATA = {
+      characters: [
+        // Harry Potter
+        "Harry Potter","Hermione Granger","Ron Weasley","Albus Dumbledore","Hagrid","Severus Snape",
+        "Voldemort","Sirius Black","Luna Lovegood","Neville Longbottom","Professor McGonagall","Dobby",
+        "Draco Malfoy","Fred Weasley","George Weasley","Ginny Weasley","Buckbeak","Hedwig",
+        // Mario / Nintendo
+        "Mario","Luigi","Princess Peach","Princess Daisy","Bowser","Toad","Yoshi","Donkey Kong","Wario",
+        // How to Train Your Dragon
+        "Hiccup","Toothless","Astrid","Stoick the Vast","Snotlout","Fishlegs",
+        // Shrek
+        "Shrek","Donkey","Princess Fiona","Puss in Boots","Lord Farquaad","Gingy",
+        // Kung Fu Panda
+        "Po","Master Shifu","Tigress","Monkey","Mantis","Crane","Viper",
+        // Madagascar
+        "Alex the Lion","Marty the Zebra","Gloria the Hippo","Melman the Giraffe","King Julien",
+        // Despicable Me / Minions
+        "Gru","Margo","Edith","Agnes","Lucy Wilde","Dr. Nefario","Vector","Bob the Minion","Stuart the Minion","Kevin the Minion",
+        // Trolls
+        "Poppy","Branch","King Peppy","Bridget","Cooper",
+        // E.T.
+        "E.T.","Elliott",
+        // Back to the Future (legacy ride)
+        "Marty McFly","Doc Brown","Biff Tannen",
+        // Marvel (at IOA)
+        "Spider-Man","Hulk","Wolverine","Storm","Cyclops","Doctor Doom","Captain America","Iron Man","Thor","Black Widow","Magneto",
+        // Transformers
+        "Optimus Prime","Bumblebee","Megatron","Starscream",
+        // Dr. Seuss
+        "Cat in the Hat","Sam-I-Am","The Lorax","Horton","Thing 1","Thing 2","Grinch","Cindy Lou Who",
+        // Universal Monsters / Dark Universe
+        "Frankenstein's Monster","Dracula","Wolfman","The Mummy","Bride of Frankenstein","Invisible Man",
+        // Sing
+        "Buster Moon","Rosita","Johnny","Meena","Ash","Gunter",
+        // Boss Baby / DreamWorks misc
+        "The Boss Baby","Tim Templeton",
+        // Curious George
+        "Curious George","The Man with the Yellow Hat",
+        // Jurassic
+        "T-Rex","Velociraptor","Blue (raptor)","Triceratops","Brachiosaurus","Dr. Alan Grant","Dr. Ellie Sattler","Dr. Ian Malcolm","John Hammond","Owen Grady","Claire Dearing",
+        // Popeye
+        "Popeye","Olive Oyl","Bluto",
+        // Dudley Do-Right
+        "Dudley Do-Right","Snidely Whiplash"
+      ],
+      movies: [
+        // Harry Potter
+        "Harry Potter and the Sorcerer's Stone","Harry Potter and the Chamber of Secrets","Harry Potter and the Prisoner of Azkaban","Harry Potter and the Goblet of Fire","Harry Potter and the Order of the Phoenix","Harry Potter and the Half-Blood Prince","Harry Potter and the Deathly Hallows","Fantastic Beasts and Where to Find Them",
+        // Jurassic
+        "Jurassic Park","The Lost World: Jurassic Park","Jurassic Park III","Jurassic World","Jurassic World: Fallen Kingdom","Jurassic World Dominion",
+        // DreamWorks
+        "Shrek","Shrek 2","Shrek the Third","Shrek Forever After",
+        "How to Train Your Dragon","How to Train Your Dragon 2","How to Train Your Dragon: The Hidden World",
+        "Kung Fu Panda","Kung Fu Panda 2","Kung Fu Panda 3","Kung Fu Panda 4",
+        "Madagascar","Madagascar: Escape 2 Africa","Madagascar 3","Penguins of Madagascar",
+        "Trolls","Trolls World Tour","Trolls Band Together",
+        "Puss in Boots","Puss in Boots: The Last Wish",
+        "The Boss Baby","Megamind","Bee Movie","Over the Hedge","Rise of the Guardians","Home","Croods","Croods: A New Age","Antz","Spirit: Stallion of the Cimarron",
+        // Illumination
+        "Despicable Me","Despicable Me 2","Despicable Me 3","Despicable Me 4","Minions","Minions: The Rise of Gru",
+        "Sing","Sing 2",
+        "The Lorax","The Grinch","The Secret Life of Pets","The Secret Life of Pets 2",
+        // Classic Universal
+        "E.T. the Extra-Terrestrial","Back to the Future","Back to the Future Part II","Back to the Future Part III",
+        "Jaws","King Kong","The Mummy","Dracula","Frankenstein","Bride of Frankenstein","The Wolf Man",
+        // Marvel (at IOA)
+        "Spider-Man","X-Men","Avengers: Endgame","Iron Man","Thor","Captain America","Doctor Strange",
+        // Transformers
+        "Transformers","Bumblebee","Transformers: Rise of the Beasts",
+        // Dr. Seuss
+        "The Cat in the Hat","Horton Hears a Who","The Grinch","The Lorax",
+        // Other Universal
+        "Curious George","Hop","Despicable Me",
+        // Mario (movie)
+        "The Super Mario Bros. Movie",
+        // Big Universal franchises (kid-friendly)
+        "Paddington","Paddington 2"
+      ],
+      rides: [
+        // USF
+        "E.T. Adventure","Men in Black: Alien Attack","Despicable Me Minion Mayhem",
+        "Harry Potter and the Escape from Gringotts","Hogwarts Express (King's Cross)",
+        "Race Through New York Starring Jimmy Fallon","Revenge of the Mummy",
+        "Transformers: The Ride 3D","Hollywood Rip Ride Rockit","Bourne Stuntacular",
+        "Animal Actors on Location","Ollivander's Wand Shop","Knight Bus photo op",
+        // IOA
+        "The Amazing Adventures of Spider-Man","Doctor Doom's Fearfall","The Incredible Hulk Coaster",
+        "Storm Force Accelatron","Jurassic World VelociCoaster","Jurassic Park River Adventure",
+        "Skull Island: Reign of Kong","Pteranodon Flyers",
+        "Hagrid's Magical Creatures Motorbike Adventure","Harry Potter and the Forbidden Journey",
+        "Flight of the Hippogriff","Hogwarts Express (Hogsmeade)",
+        "The Cat in the Hat","One Fish Two Fish Red Fish Blue Fish","Caro-Seuss-el",
+        "The High in the Sky Seuss Trolley Train","Popeye & Bluto's Bilge-Rat Barges",
+        "Dudley Do-Right's Ripsaw Falls","Camp Jurassic",
+        // Epic Universe
+        "Mario Kart: Bowser's Challenge","Mine-Cart Madness (Donkey Kong)","Yoshi's Adventure",
+        "Harry Potter and the Battle at the Ministry","Curse of the Werewolf","Monsters Unchained: The Frankenstein Experiment",
+        "Hiccup's Wing Gliders","Fyre Drill","Dragon Racer's Rally","Stardust Racers","Constellation Carousel"
+      ]
+    };
+
+    let queue = [];
+    let current = null;
+    let score = 0, skips = 0;
+    let currentCat = '';
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function labelFor(cat) {
+      if (cat === 'characters') return 'CHARACTER';
+      if (cat === 'movies') return 'MOVIE';
+      if (cat === 'rides') return 'RIDE';
+      return 'ANYTHING';
+    }
+    function iconFor(cat) {
+      if (cat === 'characters') return '🧑‍🎤';
+      if (cat === 'movies') return '🎬';
+      if (cat === 'rides') return '🎢';
+      return '🎲';
+    }
+
+    function startCat(cat) {
+      currentCat = cat;
+      let pool = cat === 'all' ? DATA.characters.concat(DATA.movies, DATA.rides) : DATA[cat];
+      queue = shuffle(pool);
+      score = 0; skips = 0;
+      document.getElementById('catPill').textContent = iconFor(cat) + ' ' + labelFor(cat);
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) { endGame(); return; }
+      current = queue.pop();
+      document.getElementById('promptLabel').textContent = labelFor(currentCat === 'all' ? guessCat(current) : currentCat);
+      document.getElementById('promptText').textContent = current;
+      updatePills();
+    }
+
+    function guessCat(item) {
+      if (DATA.characters.includes(item)) return 'characters';
+      if (DATA.movies.includes(item)) return 'movies';
+      if (DATA.rides.includes(item)) return 'rides';
+      return 'all';
+    }
+
+    function correct() { score++; next(); }
+    function skip() { skips++; next(); }
+
+    function updatePills() {
+      document.getElementById('scorePill').textContent = '✅ ' + score;
+      document.getElementById('skipPill').textContent = '⏭ ' + skips;
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' correct';
+      document.getElementById('finalSkips').textContent = skips + ' skipped';
+    }
+  </script>
+</body>
+</html>

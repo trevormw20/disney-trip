@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Would You Rather — Disney</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🤔 Would You Rather</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Two Disney choices. Pick one. Discuss. The phone tracks how the group voted. Argue with siblings. Repeat.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Q 1</div>
+      </div>
+
+      <div class="card" style="text-align:center; margin-bottom:1rem;">
+        <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px;">Would you rather...</div>
+      </div>
+
+      <button class="choice a" id="choiceA" onclick="vote('A')">A</button>
+      <div style="text-align:center; font-size:1rem; font-weight:700; margin:0.4rem 0; color:var(--gold);">— OR —</div>
+      <button class="choice b" id="choiceB" onclick="vote('B')">B</button>
+
+      <div id="results" class="hidden" style="margin-top:1rem;">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem;">VOTES SO FAR</div>
+          <div style="display:flex; justify-content:space-around; font-size:1.4rem; font-weight:700;">
+            <div>🅰️ <span id="aVotes">0</span></div>
+            <div>🅱️ <span id="bVotes">0</span></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      </div>
+
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.7rem;">End Game</button>
+    </section>
+
+    <!-- End -->
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">DONE!</div>
+        <div class="prompt">🤔 Hope you settled some debates</div>
+        <div class="sub" id="rounds"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const Q = [
+      {a:"Ride Tower of Terror 10 times in a row", b:"Wait 4 hours for Rise of the Resistance"},
+      {a:"Have lunch with Mickey Mouse", b:"Have dinner with Elsa"},
+      {a:"Be a Disney princess for a day", b:"Be a Marvel superhero for a day"},
+      {a:"Live inside Cinderella's castle", b:"Live inside the Tree of Life"},
+      {a:"Have Genie's lamp (3 wishes)", b:"Have Cinderella's fairy godmother forever"},
+      {a:"Always have to sing your sentences", b:"Always have to dance when you walk"},
+      {a:"Eat only Mickey-shaped food forever", b:"Drink only blue Galaxy milk forever"},
+      {a:"Be best friends with Stitch", b:"Be best friends with Olaf"},
+      {a:"Ride Space Mountain in the dark forever", b:"Ride It's a Small World on repeat for a week"},
+      {a:"Get a churro that never runs out", b:"Get a Dole Whip that refills itself"},
+      {a:"Go to a park with no lines but no thrill rides", b:"Go to a park with crazy thrills but 3-hour waits"},
+      {a:"Have Buzz Lightyear's wings", b:"Have Aladdin's magic carpet"},
+      {a:"Sing a duet with Elsa", b:"Dance with the Beast in the ballroom"},
+      {a:"Live in Andy's room as a toy", b:"Live in Monstropolis as a monster"},
+      {a:"Be Maui's hook holder", b:"Be Genie's lamp polisher"},
+      {a:"Spend a day in EPCOT's World Showcase", b:"Spend a day in Galaxy's Edge"},
+      {a:"Have Olaf as a pet", b:"Have Pascal the chameleon as a pet"},
+      {a:"Switch lives with a princess for a week", b:"Switch lives with a Disney villain for a day"},
+      {a:"Have Hiro's nano-bots", b:"Have Tony Stark's Iron Man suit"},
+      {a:"Be stuck on the Haunted Mansion ride forever", b:"Be stuck on Pirates of the Caribbean forever"},
+      {a:"Ride Avatar Flight of Passage every day for a year", b:"Eat free at every Disney restaurant for a year"},
+      {a:"Have your face on a Disney ride sign", b:"Have your name shouted by a parade announcer"},
+      {a:"Travel in Star-Lord's spaceship", b:"Travel in the Millennium Falcon"},
+      {a:"Have Mr. Incredible's super strength", b:"Have Elastigirl's stretchiness"},
+      {a:"Have Frozone's ice powers", b:"Have Dash's super speed"},
+      {a:"Be a chef at Gusteau's restaurant", b:"Be the lead singer at a Disney parade"},
+      {a:"Have Mickey ears that grant one wish", b:"Have a Mickey balloon that never pops"},
+      {a:"Ride every Magic Kingdom ride in one day", b:"Ride every EPCOT ride twice in one day"},
+      {a:"Sing 'Let It Go' to a packed crowd", b:"Perform 'You're Welcome' as Maui"},
+      {a:"Have Goofy as your tour guide", b:"Have Donald Duck as your tour guide"},
+      {a:"Be a cast member for a day", b:"Be in a Disney parade for a day"},
+      {a:"Have a stitch plushie that comes to life", b:"Have an Olaf plushie that comes to life"},
+      {a:"Ride the carousel forever", b:"Ride Dumbo forever"},
+      {a:"Be best friends with Buzz Lightyear", b:"Be best friends with Woody"},
+      {a:"Stay at the Grand Floridian for a year", b:"Stay at the Polynesian for a year"},
+      {a:"Live in Arendelle (always cold)", b:"Live in Motunui (always sunny)"},
+      {a:"Have Ariel's voice (singing)", b:"Have Belle's love of books"},
+      {a:"Be invisible like Violet", b:"Have super speed like Dash"},
+      {a:"Win a churro-eating contest", b:"Win a Disney trivia contest"},
+      {a:"Ride Slinky Dog Dash 20 times in a row", b:"Ride Splash Mountain wet for the rest of the day"},
+      {a:"Have a chat with the Genie", b:"Have a chat with Olaf"},
+      {a:"Be on Splash Mountain in winter", b:"Be on Tower of Terror in summer"},
+      {a:"Spend a night locked in the Magic Kingdom", b:"Spend a night locked in EPCOT"},
+      {a:"Always have to talk like a pirate", b:"Always have to sing like Ariel"},
+      {a:"Get hugged by every character you meet", b:"Get a high-five from every character"},
+      {a:"Have Tinker Bell's pixie dust to fly", b:"Have a magic carpet to ride"},
+      {a:"Travel with Carl and Russell in the floating house", b:"Travel with the Incredibles in their car"},
+      {a:"Get an autograph from every Disney princess", b:"Get a photo with every villain"},
+      {a:"Eat the giant turkey leg at Magic Kingdom", b:"Eat the Mickey ice cream sandwich"},
+      {a:"Trade your shoes for Cinderella's glass slippers", b:"Trade your hat for Goofy's hat"},
+      {a:"Ride only family-friendly rides all day", b:"Ride only thrill rides all day"},
+      {a:"Be friends with Mike Wazowski", b:"Be friends with Sully"},
+      {a:"Have a personalized Disney song written for you", b:"Have a Disney character named after you"},
+      {a:"Visit Hogwarts at Universal", b:"Visit Galaxy's Edge at Disney"},
+      {a:"Have your photo with every character in the parks", b:"Ride every roller coaster in the parks"}
+    ];
+
+    let queue = [], current = null, count = 0;
+    let aVotes = 0, bVotes = 0, voted = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(Q);
+      count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(Q);
+      current = queue.pop();
+      count++;
+      aVotes = 0; bVotes = 0;
+      voted = false;
+      document.getElementById('roundPill').textContent = 'Q ' + count;
+      document.getElementById('choiceA').textContent = '🅰️  ' + current.a;
+      document.getElementById('choiceB').textContent = '🅱️  ' + current.b;
+      document.getElementById('aVotes').textContent = '0';
+      document.getElementById('bVotes').textContent = '0';
+      document.getElementById('results').classList.add('hidden');
+      document.getElementById('choiceA').style.opacity = 1;
+      document.getElementById('choiceB').style.opacity = 1;
+    }
+
+    function vote(which) {
+      if (which === 'A') aVotes++; else bVotes++;
+      document.getElementById('aVotes').textContent = aVotes;
+      document.getElementById('bVotes').textContent = bVotes;
+      document.getElementById('results').classList.remove('hidden');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('rounds').textContent = count + ' question' + (count===1?'':'s') + ' answered';
+    }
+  </script>
+</body>
+</html>

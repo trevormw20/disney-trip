@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Park Price Is Right — Universal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">💰 Park Price Is Right</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a real Universal park snack or souvenir. Each player enters their guess. Tap "Reveal" — closest WITHOUT going over wins!
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
+      <div id="playerList" class="player-list"></div>
+      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label" id="catLabel">SNACK</div>
+        <div style="font-size:5rem; line-height:1;" id="emoji">🍦</div>
+        <div class="prompt" id="itemText" style="font-size:clamp(1.3rem, 5vw, 1.8rem); margin-top:0.5rem;">Loading...</div>
+        <div class="sub" id="locText"></div>
+      </div>
+
+      <div id="guessing">
+        <h3 style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.6rem;">Each player enter a guess ($)</h3>
+        <div id="guessRows"></div>
+        <button class="btn btn-success btn-lg btn-block" onclick="reveal()" style="margin-top:0.6rem;">✨ Reveal Price</button>
+      </div>
+
+      <div id="resultBox" class="hidden">
+        <div class="card" style="text-align:center; margin-top:0.5rem;">
+          <div style="font-size:0.85rem; color:var(--muted);">ACTUAL PRICE</div>
+          <div style="font-size:2.5rem; font-weight:800; color:var(--gold); margin:0.4rem 0;" id="actualPrice">$0.00</div>
+          <div id="winnerLine" style="font-size:1rem; font-weight:700;"></div>
+          <ol id="resultsList" class="scoreboard" style="margin-top:0.7rem;"></ol>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      </div>
+
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.7rem;">End Game</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORES</div>
+        <div class="prompt" id="winnerText">🏆</div>
+      </div>
+      <ol id="scoreboard" class="scoreboard"></ol>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()" style="margin-top:0.8rem;">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    // Approximate Universal Orlando prices (2025-ish). For fun!
+    const ITEMS = [
+      {name:"Butterbeer (cold or frozen)", emoji:"🍺", price:9.49, loc:"Wizarding World", cat:"Drink"},
+      {name:"Souvenir Butterbeer Mug (with drink)", emoji:"🍺", price:18.95, loc:"Wizarding World", cat:"Drink"},
+      {name:"Pumpkin Juice", emoji:"🎃", price:6.49, loc:"Wizarding World", cat:"Drink"},
+      {name:"Butterbeer Ice Cream", emoji:"🍦", price:7.99, loc:"Wizarding World", cat:"Snack"},
+      {name:"Three Broomsticks Fish & Chips", emoji:"🍟", price:18.99, loc:"Hogsmeade", cat:"Meal"},
+      {name:"Leaky Cauldron Bangers and Mash", emoji:"🍽️", price:18.99, loc:"Diagon Alley", cat:"Meal"},
+      {name:"Interactive Wand (Ollivander's)", emoji:"🪄", price:69.95, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Standard Wand", emoji:"🪄", price:55.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Hogwarts House Robe (adult)", emoji:"🧥", price:135.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Hogwarts House Tie", emoji:"👔", price:35.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Hogwarts House Scarf", emoji:"🧣", price:50.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Hogwarts T-Shirt", emoji:"👕", price:38.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Marauder's Map", emoji:"🗺️", price:55.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Quidditch Jersey", emoji:"👕", price:60.00, loc:"Wizarding World", cat:"Souvenir"},
+      {name:"Chocolate Frog", emoji:"🍫", price:13.95, loc:"Wizarding World", cat:"Snack"},
+      {name:"Bertie Bott's Every Flavor Beans", emoji:"🫘", price:13.95, loc:"Wizarding World", cat:"Snack"},
+      {name:"Universal Express Pass (1 day, peak)", emoji:"⚡", price:159.99, loc:"Universal Orlando", cat:"Add-on"},
+      {name:"Adult 1-Day 1-Park Ticket", emoji:"🎟️", price:139.00, loc:"Universal Orlando", cat:"Ticket"},
+      {name:"Adult 1-Day Park-to-Park Ticket", emoji:"🎟️", price:194.00, loc:"Universal Orlando", cat:"Ticket"},
+      {name:"Power-Up Band (Mario, Super Nintendo World)", emoji:"⌚", price:40.00, loc:"Epic Universe", cat:"Souvenir"},
+      {name:"Mario Themed Hat", emoji:"🎩", price:25.00, loc:"Super Nintendo World", cat:"Souvenir"},
+      {name:"Plush Yoshi", emoji:"🦖", price:30.00, loc:"Super Nintendo World", cat:"Souvenir"},
+      {name:"Toad Mushroom Souvenir Cup", emoji:"🍄", price:18.00, loc:"Super Nintendo World", cat:"Souvenir"},
+      {name:"Toad Bao Bun (Toadstool Cafe)", emoji:"🥟", price:14.99, loc:"Super Nintendo World", cat:"Snack"},
+      {name:"Mario Burger Plate (Toadstool Cafe)", emoji:"🍔", price:24.99, loc:"Super Nintendo World", cat:"Meal"},
+      {name:"Minion Plush", emoji:"🟡", price:25.00, loc:"USF", cat:"Souvenir"},
+      {name:"Minion-shaped Donut", emoji:"🍩", price:8.00, loc:"USF", cat:"Snack"},
+      {name:"Spider-Man Plush", emoji:"🕷️", price:30.00, loc:"IOA", cat:"Souvenir"},
+      {name:"Hulk Foam Fist Toy", emoji:"💪", price:25.00, loc:"IOA", cat:"Souvenir"},
+      {name:"Doc Brown's Chicken Meal", emoji:"🍗", price:14.99, loc:"USF", cat:"Meal"},
+      {name:"Lard Lad Donut (giant)", emoji:"🍩", price:7.99, loc:"USF", cat:"Snack"},
+      {name:"Ronto Wrap... (wait wrong park) — King Kong T-shirt", emoji:"👕", price:35.00, loc:"IOA", cat:"Souvenir"},
+      {name:"Funnel Cake", emoji:"🍰", price:10.99, loc:"Park-wide", cat:"Snack"},
+      {name:"Bottled Water", emoji:"💧", price:4.50, loc:"Park-wide", cat:"Drink"},
+      {name:"Coca-Cola Freestyle Refillable Cup (1 day)", emoji:"🥤", price:18.99, loc:"Universal Orlando", cat:"Drink"},
+      {name:"Pizza Slice", emoji:"🍕", price:11.99, loc:"Park-wide", cat:"Meal"},
+      {name:"Big Pretzel", emoji:"🥨", price:8.50, loc:"Park-wide", cat:"Snack"},
+      {name:"Soft Serve Ice Cream Cone", emoji:"🍦", price:6.50, loc:"Park-wide", cat:"Snack"},
+      {name:"Toothsome Chocolate Emporium Milkshake", emoji:"🥤", price:17.95, loc:"CityWalk", cat:"Drink"},
+      {name:"Universal Studios Logo T-Shirt", emoji:"👕", price:30.00, loc:"Park-wide", cat:"Souvenir"},
+      {name:"Toothless Plush", emoji:"🐉", price:35.00, loc:"Epic Universe", cat:"Souvenir"},
+      {name:"How to Train Your Dragon Hat", emoji:"🎩", price:28.00, loc:"Epic Universe", cat:"Souvenir"},
+      {name:"Frankenstein-themed T-Shirt", emoji:"🧟", price:32.00, loc:"Epic Universe", cat:"Souvenir"},
+      {name:"Stroller Rental (single, 1 day)", emoji:"👶", price:18.00, loc:"Universal Orlando", cat:"Rental"},
+      {name:"Stroller Rental (double, 1 day)", emoji:"👶", price:28.00, loc:"Universal Orlando", cat:"Rental"},
+      {name:"Locker Rental (large, all day)", emoji:"🔐", price:13.00, loc:"Universal Orlando", cat:"Rental"},
+      {name:"Photo Pack (1 day)", emoji:"📸", price:39.99, loc:"Universal Orlando", cat:"Add-on"},
+      {name:"Photo Pack (whole vacation)", emoji:"📸", price:99.99, loc:"Universal Orlando", cat:"Add-on"},
+      {name:"Mythos Restaurant Entree (avg)", emoji:"🍽️", price:24.00, loc:"IOA", cat:"Meal"},
+      {name:"Confisco Grille Burger", emoji:"🍔", price:18.99, loc:"IOA", cat:"Meal"}
+    ];
+
+    const STORAGE_KEY = 'price_u_players';
+    const DEFAULT = ['Player 1','Player 2'];
+    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
+    let scores = {}, queue = [], current = null, count = 0;
+
+    function renderPlayers() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach((name, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.innerHTML = `<input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" /><button class="remove" onclick="removePlayer(${i})">✕</button>`;
+        list.appendChild(row);
+      });
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function updPlayer(i, v) { players[i] = v; save(); }
+    function addPlayer() { players.push(''); renderPlayers(); save(); }
+    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      const cleaned = players.map(p => p.trim()).filter(Boolean);
+      if (cleaned.length < 1) { alert('Need at least 1 player.'); return; }
+      players = cleaned; save();
+      scores = {}; players.forEach(p => scores[p] = 0);
+      queue = shuffle(ITEMS); count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(ITEMS);
+      current = queue.pop(); count++;
+      document.getElementById('roundPill').textContent = 'Round ' + count;
+      document.getElementById('catLabel').textContent = current.cat.toUpperCase();
+      document.getElementById('emoji').textContent = current.emoji;
+      document.getElementById('itemText').textContent = current.name;
+      document.getElementById('locText').textContent = '📍 ' + current.loc;
+      const rows = document.getElementById('guessRows');
+      rows.innerHTML = '';
+      players.forEach((p) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.style.marginBottom = '0.5rem';
+        row.innerHTML = `<div style="flex:0.6; font-weight:700; font-size:0.95rem;">${escapeHtml(p)}</div><input type="number" inputmode="decimal" step="0.01" class="field guess-in" data-player="${escapeHtml(p)}" placeholder="$0.00" />`;
+        rows.appendChild(row);
+      });
+      document.getElementById('guessing').classList.remove('hidden');
+      document.getElementById('resultBox').classList.add('hidden');
+    }
+
+    function reveal() {
+      const inputs = document.querySelectorAll('.guess-in');
+      const guesses = [];
+      inputs.forEach(i => { const v = parseFloat(i.value); if (!isNaN(v)) guesses.push({player: i.dataset.player, guess: v}); });
+      if (guesses.length === 0) { alert('Enter at least one guess!'); return; }
+      const actual = current.price;
+      let validGuesses = guesses.filter(g => g.guess <= actual);
+      let winner;
+      if (validGuesses.length > 0) {
+        validGuesses.sort((a,b) => (actual - a.guess) - (actual - b.guess));
+        const closest = actual - validGuesses[0].guess;
+        winner = validGuesses.filter(g => actual - g.guess === closest).map(g => g.player);
+      } else {
+        guesses.sort((a,b) => Math.abs(a.guess - actual) - Math.abs(b.guess - actual));
+        const closest = Math.abs(guesses[0].guess - actual);
+        winner = guesses.filter(g => Math.abs(g.guess - actual) === closest).map(g => g.player);
+      }
+      winner.forEach(w => scores[w]++);
+      document.getElementById('actualPrice').textContent = '$' + actual.toFixed(2);
+      document.getElementById('winnerLine').innerHTML = '🏆 ' + winner.join(' & ') + ' wins this round!';
+      const list = document.getElementById('resultsList');
+      const sorted = guesses.slice().sort((a,b) => Math.abs(a.guess - actual) - Math.abs(b.guess - actual));
+      list.innerHTML = sorted.map(g => {
+        const diff = (g.guess - actual);
+        const tag = diff > 0 ? `over by $${diff.toFixed(2)}` : (diff < 0 ? `under by $${(-diff).toFixed(2)}` : 'EXACT!');
+        const isWin = winner.includes(g.player);
+        return `<li style="${isWin?'background:rgba(251,191,36,0.25);':''}">${escapeHtml(g.player)} <span class="pts">$${g.guess.toFixed(2)} (${tag})</span></li>`;
+      }).join('');
+      document.getElementById('guessing').classList.add('hidden');
+      document.getElementById('resultBox').classList.remove('hidden');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+      const max = sorted[0][1];
+      const winners = sorted.filter(([_,v]) => v === max).map(([n]) => n);
+      document.getElementById('winnerText').textContent = max === 0 ? '🤷 No rounds played!' : '🏆 ' + winners.join(' & ');
+      const list = document.getElementById('scoreboard');
+      list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} round${v===1?'':'s'} won</span></li>`).join('');
+    }
+
+    renderPlayers();
+  </script>
+</body>
+</html>

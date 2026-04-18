@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Finish the Lyric</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎤 Finish the Lyric</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a Disney lyric — first to sing the next line wins! Tap "Reveal Answer" to confirm. Track score yourself or just play for fun.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Lyric 1</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label" id="songLabel">SONG</div>
+        <div class="prompt" id="lyricText" style="font-size:clamp(1.3rem, 4.8vw, 1.8rem); line-height:1.4; font-style:italic;">"..."</div>
+      </div>
+
+      <div class="reveal-area" id="answer">Tap reveal</div>
+
+      <div class="btn-row">
+        <button class="btn btn-warn btn-lg" onclick="revealSong()">🎵 Show Song Title</button>
+        <button class="btn btn-success btn-lg" onclick="revealAnswer()">✨ Reveal</button>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.6rem;">End Game</button>
+    </section>
+
+    <!-- End -->
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">DONE!</div>
+        <div class="prompt">🎤 Sing it!</div>
+        <div class="sub" id="rounds"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const LYRICS = [
+      {song:"Let It Go (Frozen)", line:"Let it go, let it go", answer:"Can't hold it back anymore"},
+      {song:"Let It Go (Frozen)", line:"The cold never bothered me", answer:"Anyway"},
+      {song:"Hakuna Matata (The Lion King)", line:"Hakuna matata, what a wonderful", answer:"Phrase"},
+      {song:"Hakuna Matata (The Lion King)", line:"It means no worries for the rest", answer:"Of your days"},
+      {song:"Under the Sea (The Little Mermaid)", line:"Under the sea, under the sea", answer:"Darling, it's better, down where it's wetter, take it from me"},
+      {song:"A Whole New World (Aladdin)", line:"I can show you the world", answer:"Shining, shimmering, splendid"},
+      {song:"A Whole New World (Aladdin)", line:"A whole new world, a new fantastic", answer:"Point of view"},
+      {song:"Be Our Guest (Beauty and the Beast)", line:"Be our guest, be our guest", answer:"Put our service to the test"},
+      {song:"You've Got a Friend in Me (Toy Story)", line:"You've got a friend in", answer:"Me"},
+      {song:"Friend Like Me (Aladdin)", line:"You ain't never had a friend", answer:"Like me"},
+      {song:"How Far I'll Go (Moana)", line:"See the line where the sky meets the sea?", answer:"It calls me"},
+      {song:"How Far I'll Go (Moana)", line:"See how far I'll", answer:"Go"},
+      {song:"You're Welcome (Moana)", line:"What can I say except", answer:"You're welcome"},
+      {song:"We Don't Talk About Bruno (Encanto)", line:"We don't talk about Bruno", answer:"No, no, no"},
+      {song:"Surface Pressure (Encanto)", line:"Pressure like a drip, drip, drip that'll never", answer:"Stop"},
+      {song:"Into the Unknown (Frozen 2)", line:"Into the unknown, into the", answer:"Unknown"},
+      {song:"Do You Want to Build a Snowman (Frozen)", line:"Do you want to build a", answer:"Snowman"},
+      {song:"For the First Time in Forever (Frozen)", line:"For the first time in", answer:"Forever"},
+      {song:"Try Everything (Zootopia)", line:"I won't give up, no I won't give in", answer:"Till I reach the end and then I'll start again"},
+      {song:"Remember Me (Coco)", line:"Remember me, though I have to say", answer:"Goodbye"},
+      {song:"Reflection (Mulan)", line:"When will my reflection show", answer:"Who I am inside"},
+      {song:"I'll Make a Man Out of You (Mulan)", line:"Let's get down to business", answer:"To defeat the Huns"},
+      {song:"I See the Light (Tangled)", line:"All those days watching from the windows", answer:"All those years outside looking in"},
+      {song:"I Won't Say I'm in Love (Hercules)", line:"If there's a prize for rotten judgement", answer:"I guess I've already won that"},
+      {song:"Go the Distance (Hercules)", line:"I will find my way, I can", answer:"Go the distance"},
+      {song:"Almost There (Princess and the Frog)", line:"I'm almost", answer:"There"},
+      {song:"Touch the Sky (Brave)", line:"I'll fly, chase the wind and", answer:"Touch the sky"},
+      {song:"Some Day My Prince Will Come (Snow White)", line:"Some day my prince will", answer:"Come"},
+      {song:"A Dream is a Wish Your Heart Makes (Cinderella)", line:"A dream is a wish your heart", answer:"Makes"},
+      {song:"Heigh-Ho (Snow White)", line:"Heigh-ho, heigh-ho, it's off to work we", answer:"Go"},
+      {song:"Whistle While You Work (Snow White)", line:"Just whistle while you", answer:"Work"},
+      {song:"You Can Fly (Peter Pan)", line:"Think of a wonderful thought, any merry little thought", answer:"Think of Christmas, think of snow"},
+      {song:"I Just Can't Wait to Be King (The Lion King)", line:"I just can't wait to be", answer:"King"},
+      {song:"Can You Feel the Love Tonight (The Lion King)", line:"Can you feel the love", answer:"Tonight"},
+      {song:"Circle of Life (The Lion King)", line:"From the day we arrive on the planet", answer:"And blinking, step into the sun"},
+      {song:"Circle of Life (The Lion King)", line:"It's the circle of", answer:"Life"},
+      {song:"Colors of the Wind (Pocahontas)", line:"Have you ever heard the wolf cry to the", answer:"Blue corn moon"},
+      {song:"Just Around the Riverbend (Pocahontas)", line:"What I love most about rivers is", answer:"You can't step in the same river twice"},
+      {song:"Speechless (Aladdin 2019)", line:"I won't be", answer:"Speechless"},
+      {song:"One Jump Ahead (Aladdin)", line:"Gotta eat to live, gotta steal to eat", answer:"Tell you all about it when I got the time"},
+      {song:"Prince Ali (Aladdin)", line:"Prince Ali, fabulous he", answer:"Ali Ababwa"},
+      {song:"Bibbidi-Bobbidi-Boo (Cinderella)", line:"Salagadoola mechicka boola", answer:"Bibbidi-bobbidi-boo"},
+      {song:"When You Wish Upon a Star (Pinocchio)", line:"When you wish upon a", answer:"Star"},
+      {song:"Beauty and the Beast (Beauty and the Beast)", line:"Tale as old as", answer:"Time"},
+      {song:"Belle (Beauty and the Beast)", line:"Little town, it's a quiet", answer:"Village"},
+      {song:"Part of Your World (The Little Mermaid)", line:"I want to be where the", answer:"People are"},
+      {song:"Kiss the Girl (The Little Mermaid)", line:"Sha la la la la la, my oh my", answer:"Look like the boy too shy, ain't gonna kiss the girl"},
+      {song:"You'll Be in My Heart (Tarzan)", line:"You'll be in my", answer:"Heart"},
+      {song:"Two Worlds (Tarzan)", line:"Two worlds, one", answer:"Family"},
+      {song:"God Help the Outcasts (Hunchback of Notre Dame)", line:"God help the", answer:"Outcasts"},
+      {song:"Bare Necessities (The Jungle Book)", line:"Look for the bare", answer:"Necessities"},
+      {song:"Cruella De Vil (101 Dalmatians)", line:"Cruella de Vil, Cruella de", answer:"Vil"},
+      {song:"Spoonful of Sugar (Mary Poppins)", line:"Just a spoonful of sugar helps the", answer:"Medicine go down"},
+      {song:"Supercalifragilistic (Mary Poppins)", line:"Super-cali-fragil-istic-expi-ali", answer:"Docious"},
+      {song:"Chim Chim Cher-ee (Mary Poppins)", line:"Chim chiminey, chim chiminey, chim chim", answer:"Cher-ee"},
+      {song:"Zip-A-Dee-Doo-Dah (Song of the South)", line:"Zip-a-dee-doo-dah, zip-a-dee", answer:"Ay"},
+      {song:"Life is a Highway (Cars)", line:"Life is a highway, I want to ride it", answer:"All night long"},
+      {song:"If I Didn't Have You (Monsters Inc)", line:"If I didn't have", answer:"You"},
+      {song:"This Is Halloween (Nightmare Before Christmas)", line:"This is Halloween, this is", answer:"Halloween"},
+      {song:"What's This (Nightmare Before Christmas)", line:"What's this, what's this?", answer:"There's color everywhere"}
+    ];
+
+    let queue = [];
+    let current = null;
+    let count = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(LYRICS);
+      count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(LYRICS);
+      current = queue.pop();
+      count++;
+      document.getElementById('roundPill').textContent = 'Lyric ' + count;
+      document.getElementById('songLabel').textContent = '🎵 SONG HIDDEN';
+      document.getElementById('lyricText').textContent = '"' + current.line + '..."';
+      document.getElementById('answer').textContent = 'Tap reveal';
+      document.getElementById('answer').classList.add('hidden-text');
+    }
+
+    function revealSong() {
+      document.getElementById('songLabel').textContent = current.song.toUpperCase();
+    }
+
+    function revealAnswer() {
+      document.getElementById('answer').textContent = '"...' + current.answer + '"';
+      document.getElementById('answer').classList.remove('hidden-text');
+      document.getElementById('songLabel').textContent = current.song.toUpperCase();
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('rounds').textContent = count + ' lyric' + (count===1?'':'s') + ' played';
+    }
+  </script>
+</body>
+</html>

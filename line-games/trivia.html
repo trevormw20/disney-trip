@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Disney Trivia Gauntlet</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🏰 Trivia Gauntlet</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Pass the phone for each question. Whoever's turn it is taps an answer. Correct = +1. Goes 10 rounds.
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
+      <div id="playerList" class="player-list"></div>
+      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+
+      <div style="margin-top:1rem;">
+        <label class="lbl"># of Questions</label>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-ghost" onclick="setQs(10)" id="q10">10</button>
+          <button class="btn btn-ghost" onclick="setQs(15)" id="q15">15</button>
+          <button class="btn btn-ghost" onclick="setQs(20)" id="q20">20</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start Trivia</button>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Q 1 / 10</div>
+        <div class="stat-pill" id="turnPill">👤 Player</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label" id="diffLabel">EASY</div>
+        <div class="prompt" id="qText" style="font-size:clamp(1.2rem, 4.5vw, 1.6rem);">Question</div>
+      </div>
+
+      <div id="choices"></div>
+      <button class="btn btn-ghost btn-block hidden" id="nextBtn" onclick="nextQ()" style="margin-top:0.7rem;">Next →</button>
+    </section>
+
+    <!-- End -->
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL RESULTS</div>
+        <div class="prompt" id="winnerText">🏆</div>
+      </div>
+      <ol id="scoreboard" class="scoreboard"></ol>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()" style="margin-top:0.8rem;">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const QUESTIONS = [
+      {q:"What kind of animal is Stitch?", choices:["Alien","Dog","Koala","Sea Otter"], a:0, d:"Easy"},
+      {q:"What's the name of the toy cowboy in Toy Story?", choices:["Buzz","Woody","Jessie","Hamm"], a:1, d:"Easy"},
+      {q:"In Frozen, who is Elsa's younger sister?", choices:["Anna","Belle","Rapunzel","Tiana"], a:0, d:"Easy"},
+      {q:"What fish is Nemo?", choices:["Angelfish","Clownfish","Goldfish","Pufferfish"], a:1, d:"Easy"},
+      {q:"What's the name of the lion king who is Simba's dad?", choices:["Scar","Mufasa","Rafiki","Timon"], a:1, d:"Easy"},
+      {q:"What does Olaf love most?", choices:["Snow","Warm hugs","Carrots","Christmas"], a:1, d:"Easy"},
+      {q:"What instrument does Sebastian play?", choices:["Drums","Trumpet","Conductor's baton","Piano"], a:2, d:"Easy"},
+      {q:"What is Lumiere?", choices:["Clock","Candelabra","Teapot","Wardrobe"], a:1, d:"Easy"},
+      {q:"What's Aladdin's monkey named?", choices:["Iago","Abu","Pascal","Mushu"], a:1, d:"Easy"},
+      {q:"What color is Ariel's hair?", choices:["Blonde","Red","Brown","Black"], a:1, d:"Easy"},
+      {q:"What does Mickey Mouse always wear on his hands?", choices:["Mittens","White gloves","Boxing gloves","Nothing"], a:1, d:"Easy"},
+      {q:"What's the name of Belle's father?", choices:["Maurice","Marcel","Claude","Pierre"], a:0, d:"Medium"},
+      {q:"In Moana, who is the demigod that helps her?", choices:["Tamatoa","Maui","Heihei","Tui"], a:1, d:"Easy"},
+      {q:"How many dwarfs live with Snow White?", choices:["5","6","7","8"], a:2, d:"Easy"},
+      {q:"What is Genie's favorite phrase about being a friend?", choices:["Friend Like Me","Best Friend","Forever Friend","Friend Indeed"], a:0, d:"Easy"},
+      {q:"What animal is Pumbaa?", choices:["Pig","Warthog","Boar","Hippo"], a:1, d:"Easy"},
+      {q:"In Toy Story, who is Andy's favorite toy?", choices:["Buzz","Woody","Slinky","Rex"], a:1, d:"Easy"},
+      {q:"What's the name of Rapunzel's pet chameleon?", choices:["Pascal","Mushu","Stuart","Linguini"], a:0, d:"Medium"},
+      {q:"Who is the villain in Sleeping Beauty?", choices:["Maleficent","Ursula","Cruella","Mother Gothel"], a:0, d:"Medium"},
+      {q:"What's the name of Merida's horse in Brave?", choices:["Maximus","Angus","Bullseye","Philippe"], a:1, d:"Medium"},
+      {q:"What kind of bird is Zazu in The Lion King?", choices:["Toucan","Hornbill","Parrot","Crow"], a:1, d:"Medium"},
+      {q:"In Finding Nemo, what's the name of the forgetful blue fish?", choices:["Coral","Dory","Pearl","Squirt"], a:1, d:"Easy"},
+      {q:"What is Elastigirl's superhero name in The Incredibles?", choices:["Stretch","Elastigirl","Mrs. Incredible","Mrs. Stretch"], a:1, d:"Easy"},
+      {q:"In Encanto, who is the family member they don't talk about?", choices:["Bruno","Pepa","Felix","Camilo"], a:0, d:"Easy"},
+      {q:"What food does Remy the rat love to make?", choices:["Cheese","Ratatouille","Bread","Soup"], a:1, d:"Easy"},
+      {q:"In Up, what is Russell's badge category?", choices:["Wilderness Explorer","Boy Scout","Junior Ranger","Camp Buddy"], a:0, d:"Medium"},
+      {q:"What is the name of Carl's house's main vehicle source of flight?", choices:["Jet engines","Helium tank","Balloons","Magic"], a:2, d:"Easy"},
+      {q:"What color is Sully in Monsters, Inc.?", choices:["Green","Blue","Purple","Pink"], a:1, d:"Easy"},
+      {q:"What's Mike Wazowski's main feature?", choices:["3 eyes","1 big eye","Long tail","Wings"], a:1, d:"Easy"},
+      {q:"In Inside Out, what color is Joy?", choices:["Pink","Blue","Yellow","Green"], a:2, d:"Easy"},
+      {q:"What's the dragon's name in Mulan?", choices:["Mushu","Falcor","Toothless","Drake"], a:0, d:"Easy"},
+      {q:"What is Cinderella's curfew?", choices:["10pm","11pm","Midnight","Dawn"], a:2, d:"Easy"},
+      {q:"What kind of pet does Pocahontas have?", choices:["Raccoon","Dog","Skunk","Owl"], a:0, d:"Medium"},
+      {q:"In Frozen, what does Anna's hair turn when frozen?", choices:["Blonde","White","Silver","Blue"], a:1, d:"Medium"},
+      {q:"Who voices Genie in the original Aladdin?", choices:["Robin Williams","Eddie Murphy","Jim Carrey","Will Smith"], a:0, d:"Medium"},
+      {q:"What is the magical kingdom in Encanto called?", choices:["Encanto","Casita","Madrigal","Colombia"], a:0, d:"Medium"},
+      {q:"How many fingers do Disney characters typically have?", choices:["3","4","5","6"], a:1, d:"Medium"},
+      {q:"In Toy Story, what's Mr. Potato Head's wife called?", choices:["Mrs. Spud","Mrs. Potato Head","Mama Tater","Mrs. Head"], a:1, d:"Easy"},
+      {q:"What's the name of Tarzan's gorilla mother?", choices:["Kala","Terk","Tantor","Kerchak"], a:0, d:"Medium"},
+      {q:"In The Princess and the Frog, where does Tiana live?", choices:["Atlanta","New Orleans","Miami","Charleston"], a:1, d:"Easy"},
+      {q:"What kind of hat does Mickey wear in Fantasia?", choices:["Top hat","Sorcerer's hat","Cowboy hat","Wizard cape"], a:1, d:"Medium"},
+      {q:"What's the name of the train in Mickey & Minnie's Runaway Railway?", choices:["Casey Jr.","Engine #1","Goofy's Express","Mickey Mover"], a:0, d:"Hard"},
+      {q:"What Disney park opened first in Florida?", choices:["EPCOT","Magic Kingdom","Hollywood Studios","Animal Kingdom"], a:1, d:"Easy"},
+      {q:"What is the tallest mountain at Magic Kingdom?", choices:["Splash","Space","Big Thunder","Expedition Everest"], a:1, d:"Hard"},
+      {q:"What does EPCOT stand for?", choices:["Experimental Prototype Community of Tomorrow","Every Park Connects on Tracks","Earth Park of Tomorrow","Experimental Park of Children's Tales"], a:0, d:"Hard"},
+      {q:"What is the name of EPCOT's signature ball-shaped ride?", choices:["Soarin'","Test Track","Spaceship Earth","Frozen Ever After"], a:2, d:"Easy"},
+      {q:"In Tangled, what magical item does Rapunzel use?", choices:["Mirror","Frying pan","Sword","Spinning wheel"], a:1, d:"Easy"},
+      {q:"What kind of animal is Sven in Frozen?", choices:["Reindeer","Moose","Horse","Elk"], a:0, d:"Easy"},
+      {q:"What's the name of the toy dinosaur in Toy Story?", choices:["Rex","Buzz","Slinky","Dino"], a:0, d:"Easy"},
+      {q:"In Beauty and the Beast, what's the teapot's name?", choices:["Mrs. Potts","Madame Tea","Mrs. Cup","Lady Pots"], a:0, d:"Easy"},
+      {q:"What is Goofy's son's name?", choices:["Max","Pete","PJ","Mickey Jr."], a:0, d:"Medium"},
+      {q:"In Lilo & Stitch, what is Stitch's experiment number?", choices:["624","626","628","666"], a:1, d:"Hard"},
+      {q:"What kind of creature is Sebastian in The Little Mermaid?", choices:["Crab","Lobster","Shrimp","Fish"], a:0, d:"Easy"},
+      {q:"What's the name of the ride in Magic Kingdom with the singing animals from around the world?", choices:["Carousel of Progress","It's a Small World","Enchanted Tiki Room","Country Bear Jamboree"], a:1, d:"Easy"},
+      {q:"What color are Buzz Lightyear's wings?", choices:["Red and white","Purple and green","Blue and white","Green and blue"], a:1, d:"Medium"}
+    ];
+
+    const STORAGE_KEY = 'trivia_players';
+    const DEFAULT = ['Player 1','Player 2'];
+
+    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
+    let scores = {}, qQueue = [], qIdx = 0, totalQs = 10, turn = 0, answered = false;
+
+    function setQs(n) {
+      totalQs = n;
+      ['q10','q15','q20'].forEach(id => { const el=document.getElementById(id); el.style.background='transparent'; el.style.color='white'; });
+      const cur = document.getElementById('q'+n);
+      cur.style.background = 'var(--gold)'; cur.style.color = '#1e2a38';
+    }
+    setQs(10);
+
+    function renderPlayers() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach((name, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.innerHTML = `
+          <input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" />
+          <button class="remove" onclick="removePlayer(${i})">✕</button>
+        `;
+        list.appendChild(row);
+      });
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function updPlayer(i, v) { players[i] = v; save(); }
+    function addPlayer() { players.push(''); renderPlayers(); save(); }
+    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      const cleaned = players.map(p => p.trim()).filter(Boolean);
+      if (cleaned.length < 1) { alert('Need at least 1 player.'); return; }
+      players = cleaned;
+      save();
+      scores = {}; players.forEach(p => scores[p] = 0);
+      qQueue = shuffle(QUESTIONS).slice(0, totalQs);
+      qIdx = 0; turn = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      showQ();
+    }
+
+    function showQ() {
+      if (qIdx >= qQueue.length) { endGame(); return; }
+      answered = false;
+      const q = qQueue[qIdx];
+      document.getElementById('roundPill').textContent = `Q ${qIdx+1} / ${qQueue.length}`;
+      document.getElementById('turnPill').textContent = '👤 ' + players[turn];
+      document.getElementById('diffLabel').textContent = q.d.toUpperCase();
+      document.getElementById('qText').textContent = q.q;
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      // shuffle choice order while tracking correct
+      const indices = q.choices.map((_,i) => i);
+      const order = shuffle(indices);
+      order.forEach(origIdx => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.textContent = q.choices[origIdx];
+        b.onclick = () => answer(b, origIdx === q.a);
+        ch.appendChild(b);
+      });
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    function answer(btn, correct) {
+      if (answered) return;
+      answered = true;
+      const allBtns = document.querySelectorAll('#choices .choice');
+      const q = qQueue[qIdx];
+      allBtns.forEach((b, i) => {
+        b.style.pointerEvents = 'none';
+        if (b.textContent === q.choices[q.a]) b.classList.add('correct');
+      });
+      if (!correct) btn.classList.add('wrong');
+      else scores[players[turn]]++;
+      document.getElementById('nextBtn').classList.remove('hidden');
+    }
+
+    function nextQ() {
+      qIdx++;
+      turn = (turn + 1) % players.length;
+      showQ();
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+      const max = sorted[0][1];
+      const winners = sorted.filter(([_,v]) => v === max).map(([n]) => n);
+      document.getElementById('winnerText').textContent = '🏆 ' + winners.join(' & ');
+      const list = document.getElementById('scoreboard');
+      list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} pt${v===1?'':'s'}</span></li>`).join('');
+    }
+
+    renderPlayers();
+  </script>
+</body>
+</html>

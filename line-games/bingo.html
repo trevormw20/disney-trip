@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Ride Wait Bingo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎯 Ride Wait Bingo</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <!-- Setup -->
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Pick the ride line you're in. Phone shows a 3×3 bingo card with stuff to spot in the queue. Tap a square when you see it. Get 3 in a row to win!
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick Your Ride</h3>
+      <div id="rideList" style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"></div>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="ridePill">🎢</div>
+        <div class="stat-pill" id="markedPill">⭐ 0/9</div>
+      </div>
+
+      <div id="bingoGrid" class="bingo"></div>
+
+      <div id="winBanner" class="hidden card" style="text-align:center; background:linear-gradient(135deg, #fbbf24, #ec4899); border:none; margin-bottom:0.8rem;">
+        <div style="font-size:2rem;">🎉 BINGO! 🎉</div>
+        <div style="font-size:0.95rem; margin-top:0.3rem;">You got 3 in a row!</div>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="newCard()">🔀 New Card (Same Ride)</button>
+      <button class="btn btn-ghost btn-block" onclick="backToSetup()" style="margin-top:0.5rem;">← Pick Different Ride</button>
+    </section>
+  </main>
+
+  <script>
+    // Each ride has a pool of 12-16 items; we randomly pick 8 + free space.
+    const RIDES = {
+      "general": {
+        name: "Any Ride / General",
+        emoji: "🎢",
+        items: [
+          "Mickey balloon spotted",
+          "Family in matching shirts",
+          "Baby crying or sleeping",
+          "Someone eating a snack",
+          "Cast member greeting guests",
+          "Park map being held",
+          "Selfie being taken",
+          "Glow stick or light-up wand",
+          "Mickey ears spotted",
+          "Stroller folded up",
+          "Someone yawning",
+          "Pin trading lanyard",
+          "Disney shirt with old characters",
+          "Person checking ride wait time",
+          "Souvenir cup being sipped"
+        ]
+      },
+      "spaceMtn": {
+        name: "Space Mountain",
+        emoji: "🚀",
+        items: [
+          "PeopleMover passes overhead",
+          "Hear ride 'whoosh' from inside",
+          "Star projection on wall",
+          "Cosmic sound effects",
+          "Space-themed mural",
+          "Family looking nervous",
+          "Someone says 'I'm scared'",
+          "Tomorrowland music in background",
+          "Glow-in-the-dark detail",
+          "Astronaut/space costume",
+          "Phone flashlight test",
+          "Someone counting cars in front"
+        ]
+      },
+      "splash": {
+        name: "Tiana's Bayou Adventure",
+        emoji: "🐸",
+        items: [
+          "Frog statue or detail",
+          "Bayou-themed music",
+          "Princess Tiana imagery",
+          "Someone wearing a poncho",
+          "Wet guests exiting",
+          "Hear the drop SCREAM",
+          "Jazz/zydeco music",
+          "Louis the alligator reference",
+          "Mama Odie reference",
+          "Someone dreading the splash",
+          "Green bayou plants/decor",
+          "Family debating if it's worth getting wet"
+        ]
+      },
+      "bigThunder": {
+        name: "Big Thunder Mountain",
+        emoji: "⛰️",
+        items: [
+          "Goat with dynamite",
+          "Mining equipment in queue",
+          "Dust kicked up",
+          "Hear 'wildest ride' announcement",
+          "Cowboy hat spotted",
+          "Pickaxe or mining tool decor",
+          "Mountain rock formation detail",
+          "Treasure or gold prop",
+          "Train whistle sound",
+          "Chicken or animal animatronic",
+          "Old west sign",
+          "Person in cowboy boots"
+        ]
+      },
+      "pirates": {
+        name: "Pirates of the Caribbean",
+        emoji: "🏴‍☠️",
+        items: [
+          "Hear 'Yo Ho' song",
+          "Skull and crossbones detail",
+          "Cannon prop",
+          "Treasure chest spotted",
+          "Pirate flag",
+          "Spooky stone tunnel",
+          "Wet/musty smell",
+          "Boat splash sound",
+          "Pirate hat on a guest",
+          "Caribbean music",
+          "Anchor decoration",
+          "Someone wearing eye patch"
+        ]
+      },
+      "haunted": {
+        name: "Haunted Mansion",
+        emoji: "👻",
+        items: [
+          "Hear distant organ music",
+          "Spider web detail",
+          "Tombstone with funny name",
+          "Pet cemetery sign",
+          "Black crepe / mourning decor",
+          "Ghost host voice in background",
+          "Someone holding hands nervously",
+          "Hidden Mickey in stones",
+          "Fake spider or bat",
+          "Stretching room reference",
+          "Haunted Mansion plush",
+          "Person says '999 happy haunts'"
+        ]
+      },
+      "smallWorld": {
+        name: "It's a Small World",
+        emoji: "🌍",
+        items: [
+          "Hear THE song",
+          "Clock tower visible",
+          "Colorful pinwheel/flag",
+          "Family with toddler",
+          "Person humming the song",
+          "International decor",
+          "Someone covering ears jokingly",
+          "Boat splashing in water",
+          "Geometric pastel art",
+          "Baby smiling",
+          "Someone reading a book in line",
+          "Family taking photo at entrance"
+        ]
+      },
+      "peterPan": {
+        name: "Peter Pan's Flight",
+        emoji: "🧚",
+        items: [
+          "Tinker Bell pixie dust effect",
+          "Star or moon decoration",
+          "Lost Boys reference",
+          "Pirate ship model",
+          "Captain Hook mention",
+          "Children giggling",
+          "Long line complaint heard",
+          "Family with princess dress kid",
+          "Someone says 'I believe in fairies'",
+          "Wendy's house mural",
+          "Tick-tock crocodile reference",
+          "Old-style book/storybook decor"
+        ]
+      },
+      "sevenDwarfs": {
+        name: "Seven Dwarfs Mine Train",
+        emoji: "💎",
+        items: [
+          "Heigh-ho song heard",
+          "Mining cart prop",
+          "Gem or jewel decoration",
+          "Dwarf statue or carving",
+          "Someone names all 7 dwarfs",
+          "Snow White mention",
+          "Forest/cottage decor",
+          "Pickaxe prop",
+          "Family with kids 7+",
+          "Wishing well or water feature",
+          "Someone humming 'Whistle While You Work'",
+          "Old-fashioned lanterns"
+        ]
+      },
+      "runawayRailway": {
+        name: "Mickey & Minnie's Runaway Railway",
+        emoji: "🐭",
+        items: [
+          "Vintage Mickey poster",
+          "1930s music",
+          "Cartoon-style art",
+          "Goofy reference",
+          "Train whistle",
+          "Old-style theater marquee",
+          "Family wearing ears",
+          "Someone humming Mickey theme",
+          "Black-and-white photo decor",
+          "Steamboat Willie reference",
+          "Daisy Duck mention",
+          "Hidden Mickey spotted"
+        ]
+      },
+      "slinky": {
+        name: "Slinky Dog Dash",
+        emoji: "🐕",
+        items: [
+          "Andy's name written somewhere",
+          "Toy block / Lego-style decor",
+          "Crayon prop",
+          "Tinker Toy decoration",
+          "Family with Toy Story shirts",
+          "Hear Slinky 'boing' sound",
+          "Someone wearing Buzz/Woody costume",
+          "Giant board game piece",
+          "Game card decor",
+          "'You've Got a Friend in Me' heard",
+          "Andy's room reference",
+          "Person says 'To infinity and beyond!'"
+        ]
+      },
+      "tower": {
+        name: "Tower of Terror",
+        emoji: "🏨",
+        items: [
+          "Twilight Zone music",
+          "Old hotel decor",
+          "Cobwebs in queue",
+          "1930s newspaper",
+          "Vintage suitcase",
+          "Hear distant scream",
+          "Black & white TV showing intro",
+          "Someone says 'I can't do it'",
+          "Bellhop reference",
+          "Dimly lit hallway",
+          "Lightning sound effect",
+          "Eerie statue or bust"
+        ]
+      },
+      "rockNRoller": {
+        name: "Rock 'n' Roller Coaster",
+        emoji: "🎸",
+        items: [
+          "Aerosmith song heard",
+          "Limo prop",
+          "Electric guitar decor",
+          "Concert poster",
+          "Loud rock music",
+          "Family with hands over ears",
+          "Recording studio reference",
+          "LA street decoration",
+          "Person says 'I can't believe...'",
+          "Rocker outfit on guest",
+          "Backstage pass decor",
+          "Speaker stack visible"
+        ]
+      },
+      "starWars": {
+        name: "Rise of the Resistance",
+        emoji: "⭐",
+        items: [
+          "Lightsaber spotted",
+          "Stormtrooper costume",
+          "BB-8 plush",
+          "Star Wars music",
+          "Grogu (Baby Yoda) plush",
+          "First Order banner",
+          "Someone speaks Wookiee",
+          "Resistance logo",
+          "Person quotes Star Wars line",
+          "Death Star reference",
+          "Rey or Finn cosplay",
+          "Person says 'May the Force be with you'"
+        ]
+      },
+      "smugglers": {
+        name: "Millennium Falcon: Smugglers Run",
+        emoji: "🚀",
+        items: [
+          "Falcon model spotted",
+          "Hear Hondo Ohnaka voice",
+          "Cargo crate decor",
+          "Outpost/cantina music",
+          "Someone wearing pilot vest",
+          "Galaxy's Edge greeting heard",
+          "Family arguing over pilot role",
+          "Chewbacca plush",
+          "Spice/cargo container",
+          "Drink from Oga's Cantina",
+          "Datapad in queue",
+          "Person says 'May the Force be with you'"
+        ]
+      },
+      "soarin": {
+        name: "Soarin' Around the World",
+        emoji: "✈️",
+        items: [
+          "Airplane/hangar decor",
+          "Travel poster on wall",
+          "World landmark photo",
+          "Family with maps",
+          "Pilot hat spotted",
+          "Person says 'I love the smell'",
+          "Compass decoration",
+          "Globe in display",
+          "Cloud/sky imagery",
+          "Hear orchestra warm-up",
+          "Person comparing to last visit",
+          "Couple holding hands"
+        ]
+      },
+      "testTrack": {
+        name: "Test Track",
+        emoji: "🚗",
+        items: [
+          "Car blueprint on wall",
+          "Test car prop",
+          "Speedometer decor",
+          "Person designing car at kiosk",
+          "Family debating who designs",
+          "Hear engine sound",
+          "Crash test dummy reference",
+          "Tire stack",
+          "Racing flag decor",
+          "Someone wearing car-themed shirt",
+          "Person says 'I want to win'",
+          "Lab coat / scientist decor"
+        ]
+      },
+      "spaceshipEarth": {
+        name: "Spaceship Earth",
+        emoji: "🌐",
+        items: [
+          "See the giant ball outside",
+          "Cave painting decor",
+          "Renaissance art reference",
+          "Telephone or telegraph prop",
+          "Computer history display",
+          "Stars/constellation projection",
+          "Family with kids asking 'what is this?'",
+          "Person dozing off",
+          "Egyptian/pyramid decor",
+          "Greek column visible",
+          "Hear narrator voice",
+          "Old-fashioned printing press"
+        ]
+      },
+      "frozenEverAfter": {
+        name: "Frozen Ever After",
+        emoji: "❄️",
+        items: [
+          "Hear 'Let It Go'",
+          "Snowflake decoration",
+          "Olaf plush spotted",
+          "Norway/Arendelle architecture",
+          "Family in Elsa dress",
+          "Ice/crystal prop",
+          "Someone humming 'For the First Time'",
+          "Wooden Norse decor",
+          "Person says 'Do you wanna build a snowman?'",
+          "Sven (reindeer) reference",
+          "Pickled herring sign",
+          "Toddler in princess dress"
+        ]
+      },
+      "ratatouille": {
+        name: "Remy's Ratatouille Adventure",
+        emoji: "🐀",
+        items: [
+          "Paris/France decor",
+          "Hear French music",
+          "Chef hat or apron",
+          "Bread/baguette prop",
+          "Cheese display",
+          "Restaurant menu prop",
+          "Person says 'Anyone can cook'",
+          "Family in matching striped shirts",
+          "Eiffel Tower reference",
+          "Cooking utensil decor",
+          "Mouse silhouette spotted",
+          "Person says 'Bonjour!'"
+        ]
+      },
+      "avatar": {
+        name: "Avatar Flight of Passage",
+        emoji: "🌿",
+        items: [
+          "Floating mountain visible",
+          "Bioluminescent blue light",
+          "Pandora plant decor",
+          "Banshee statue/model",
+          "Person wearing blue",
+          "Hear Avatar music",
+          "Tribal/Na'vi art on wall",
+          "Family awed by environment",
+          "Someone with mouth open",
+          "Glowing element spotted",
+          "Person says 'I see you'",
+          "Massive cave decor"
+        ]
+      },
+      "naviRiver": {
+        name: "Na'vi River Journey",
+        emoji: "🌊",
+        items: [
+          "Glowing plant decor",
+          "Bioluminescent moss/light",
+          "Pandora vegetation",
+          "Hear ambient music",
+          "Family with sleeping kid",
+          "Soft blue/purple lighting",
+          "Glowing floor/path detail",
+          "Wooden Na'vi totem",
+          "Person says 'It's so pretty'",
+          "Canoe/boat reference",
+          "Tribal carving",
+          "Floating jellyfish-like decor"
+        ]
+      },
+      "everest": {
+        name: "Expedition Everest",
+        emoji: "🏔️",
+        items: [
+          "Yeti footprint",
+          "Tibetan prayer flags",
+          "Mountain climbing gear",
+          "Family with nervous look",
+          "Hear distant roar",
+          "Asian-inspired temple decor",
+          "Anandapur sign",
+          "Snow-capped photo",
+          "Bell or wind chime",
+          "Tea cup or kettle decor",
+          "Person says 'Yeti is real'",
+          "Backpack with mountain logo"
+        ]
+      },
+      "safari": {
+        name: "Kilimanjaro Safaris",
+        emoji: "🦒",
+        items: [
+          "Savannah-themed decor",
+          "Animal print on guest",
+          "Safari hat spotted",
+          "Wood/thatched roof",
+          "Animal call sound",
+          "African music",
+          "Family with binoculars",
+          "Map of reserve",
+          "Person says 'I want to see lions'",
+          "Bug or fly noise",
+          "Drinking water station",
+          "Reusable water bottle"
+        ]
+      }
+    };
+
+    let currentRideKey = 'general';
+    let card = []; // 9 items
+    let marked = []; // 9 booleans
+    let won = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function renderRideList() {
+      const list = document.getElementById('rideList');
+      list.innerHTML = '';
+      Object.entries(RIDES).forEach(([key, r]) => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-ghost';
+        b.style.padding = '1rem 0.6rem';
+        b.style.flexDirection = 'column';
+        b.style.lineHeight = '1.2';
+        b.innerHTML = `<div style="font-size:1.6rem; margin-bottom:0.2rem;">${r.emoji}</div><div style="font-size:0.8rem; font-weight:700;">${r.name}</div>`;
+        b.onclick = () => pickRide(key);
+        list.appendChild(b);
+      });
+    }
+    renderRideList();
+
+    function pickRide(key) {
+      currentRideKey = key;
+      newCard();
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+    }
+
+    function newCard() {
+      const r = RIDES[currentRideKey];
+      const pool = shuffle(r.items);
+      // 8 items + 1 free space in the middle
+      const picks = pool.slice(0, 8);
+      // build 3x3 with free at index 4
+      card = [picks[0], picks[1], picks[2], picks[3], 'FREE ⭐', picks[4], picks[5], picks[6], picks[7]];
+      marked = [false, false, false, false, true, false, false, false, false];
+      won = false;
+      document.getElementById('ridePill').textContent = r.emoji + ' ' + r.name;
+      document.getElementById('winBanner').classList.add('hidden');
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('bingoGrid');
+      grid.innerHTML = '';
+      card.forEach((item, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'bingo-cell' + (marked[i] ? ' marked' : '') + (i === 4 ? ' free' : '');
+        cell.textContent = item;
+        cell.onclick = () => toggle(i);
+        grid.appendChild(cell);
+      });
+      const c = marked.filter(Boolean).length;
+      document.getElementById('markedPill').textContent = '⭐ ' + c + '/9';
+      checkWin();
+    }
+
+    function toggle(i) {
+      if (i === 4) return; // free space stays
+      marked[i] = !marked[i];
+      renderGrid();
+    }
+
+    function checkWin() {
+      const lines = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      const wins = lines.some(l => l.every(idx => marked[idx]));
+      if (wins && !won) {
+        won = true;
+        document.getElementById('winBanner').classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+      }
+    }
+
+    function backToSetup() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('setup').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

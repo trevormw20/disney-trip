@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Spot It Challenge — Universal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">👀 Spot It</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows something to spot in line or around you. First person to find it gets a point — tap their name. 60-second timer per item.
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
+      <div id="playerList" class="player-list"></div>
+      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+
+      <div style="margin-top:1rem;">
+        <label class="lbl">Difficulty</label>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-ghost" onclick="setDiff('easy')" id="dEasy">😎 Easy</button>
+          <button class="btn btn-ghost" onclick="setDiff('medium')" id="dMedium">🎯 Medium</button>
+          <button class="btn btn-ghost" onclick="setDiff('hard')" id="dHard">🔥 Hard</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1</div>
+        <div class="stat-pill" id="timerPill">⏱ 60</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">SPOT THIS</div>
+        <div class="prompt" id="targetText">Look around!</div>
+      </div>
+
+      <div style="font-size:0.85rem; color:var(--muted); text-align:center; margin-bottom:0.6rem;">Who spotted it first?</div>
+      <div id="winnerButtons" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+
+      <button class="btn btn-warn btn-block" onclick="noOne()" style="margin-top:0.7rem;">⏭ Nobody — Skip</button>
+      <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.5rem;">End Game</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORES</div>
+        <div class="prompt" id="winnerText">🏆</div>
+      </div>
+      <ol id="scoreboard" class="scoreboard"></ol>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()" style="margin-top:0.8rem;">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const ITEMS = {
+      easy: [
+        "Someone wearing a Harry Potter scarf",
+        "A wand being held",
+        "Someone wearing a Hogwarts robe",
+        "A Minion plush or shirt",
+        "A stroller",
+        "A character t-shirt (any franchise)",
+        "Someone with a backpack",
+        "A water bottle",
+        "Someone with sunglasses on their head",
+        "A cast member (called 'team member' at Universal)",
+        "A trash can",
+        "A baby or toddler",
+        "Family in matching shirts",
+        "Someone using a phone",
+        "Someone with face paint",
+        "A snack being eaten",
+        "A souvenir cup",
+        "Someone in a Mario hat or cap",
+        "A guest with a Universal Express Pass lanyard",
+        "Someone yawning"
+      ],
+      medium: [
+        "Someone wearing a specific Hogwarts house color (any)",
+        "A real Ollivander's wand box",
+        "Someone in a Slytherin shirt specifically",
+        "A guest with a Mario power-up wristband (Power-Up Band)",
+        "Someone holding a butterbeer cup",
+        "A guest with a Velocicoaster shirt",
+        "A Jurassic Park / World logo on someone",
+        "A team member's name tag from a state you've visited",
+        "Two strangers wearing the same shirt",
+        "Someone humming a movie theme",
+        "A guest with a stroller AND a backpack",
+        "A guest wearing knockoff merch (off-brand)",
+        "Someone reading a book in line",
+        "A pin trading lanyard (less common at Universal)",
+        "Someone with a custom embroidered ear/hat",
+        "A bird inside the queue area",
+        "A grandparent wearing themed merch",
+        "Someone vlogging with a selfie stick",
+        "A guest with a Toothless plush",
+        "Someone on FaceTime in line"
+      ],
+      hard: [
+        "Someone in a full Harry Potter cosplay (robe + tie + wand + scarf)",
+        "A guest wearing 4+ pieces of themed merch",
+        "Someone with a Marauder's Map prop",
+        "A guest with an interactive wand (gold price tag/star)",
+        "Someone wearing a Hagrid-style coat",
+        "A T-shirt from a closed Universal ride",
+        "A cast member's pin you've never seen before",
+        "A Velocicoaster vest sticker",
+        "Someone wearing a Power-Up Band AND a wand",
+        "A baby asleep in a stroller AND wearing themed clothing",
+        "A guest with a Universal magazine/guide map",
+        "Someone visibly nervous about the upcoming ride",
+        "A teen pretending to be unimpressed",
+        "A Hogwarts robe with prefect badge",
+        "A guest with a custom wand (not store-bought)",
+        "A dragon plush of any kind",
+        "Someone holding a Minion souvenir cup AND eating",
+        "A tour guide with their group",
+        "A guest matching their phone case to their merch",
+        "A guest with a Quidditch jersey"
+      ]
+    };
+
+    const STORAGE_KEY = 'spotit_u_players';
+    const DEFAULT = ['Player 1','Player 2'];
+    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
+    let scores = {}, queue = [], current = null, count = 0;
+    let timer = null, remaining = 60, diff = 'easy';
+
+    function setDiff(d) {
+      diff = d;
+      ['dEasy','dMedium','dHard'].forEach(id => { const el=document.getElementById(id); el.style.background='transparent'; el.style.color='white'; });
+      const cur = document.getElementById('d' + d.charAt(0).toUpperCase() + d.slice(1));
+      cur.style.background = 'var(--gold)'; cur.style.color = '#1e2a38';
+    }
+    setDiff('easy');
+
+    function renderPlayers() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach((name, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-row';
+        row.innerHTML = `<input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" /><button class="remove" onclick="removePlayer(${i})">✕</button>`;
+        list.appendChild(row);
+      });
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function updPlayer(i, v) { players[i] = v; save(); }
+    function addPlayer() { players.push(''); renderPlayers(); save(); }
+    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      const cleaned = players.map(p => p.trim()).filter(Boolean);
+      if (cleaned.length < 1) { alert('Add at least one player.'); return; }
+      players = cleaned; save();
+      scores = {}; players.forEach(p => scores[p] = 0);
+      queue = shuffle(ITEMS[diff]);
+      count = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (queue.length === 0) queue = shuffle(ITEMS[diff]);
+      current = queue.pop(); count++;
+      document.getElementById('roundPill').textContent = 'Round ' + count;
+      document.getElementById('targetText').textContent = current;
+      const wb = document.getElementById('winnerButtons');
+      wb.innerHTML = '';
+      players.forEach(p => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-success btn-lg';
+        b.textContent = '🏆 ' + p;
+        b.onclick = () => award(p);
+        wb.appendChild(b);
+      });
+      const all = document.createElement('button');
+      all.className = 'btn btn-primary';
+      all.textContent = '🎉 All found it (everyone +1)';
+      all.onclick = () => awardAll();
+      wb.appendChild(all);
+      startTimer();
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      remaining = 60;
+      document.getElementById('timerPill').textContent = '⏱ ' + remaining;
+      timer = setInterval(() => {
+        remaining--;
+        document.getElementById('timerPill').textContent = '⏱ ' + remaining;
+        if (remaining <= 0) { clearInterval(timer); next(); }
+      }, 1000);
+    }
+
+    function award(p) { scores[p]++; clearInterval(timer); next(); }
+    function awardAll() { players.forEach(p => scores[p]++); clearInterval(timer); next(); }
+    function noOne() { clearInterval(timer); next(); }
+
+    function endGame() {
+      clearInterval(timer);
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+      const max = sorted[0][1];
+      const winners = sorted.filter(([_,v]) => v === max).map(([n]) => n);
+      document.getElementById('winnerText').textContent = max === 0 ? '🤷 No spots this round!' : '🏆 ' + winners.join(' & ');
+      const list = document.getElementById('scoreboard');
+      list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} pt${v===1?'':'s'}</span></li>`).join('');
+    }
+
+    renderPlayers();
+  </script>
+</body>
+</html>

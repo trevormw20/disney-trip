@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Ride Wait Bingo — Universal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎯 Ride Wait Bingo</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Pick the ride line you're in. Phone shows a 3×3 bingo card with stuff to spot in that specific queue. Tap a square when you see it. 3 in a row wins!
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick Your Ride</h3>
+      <div id="rideList" style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"></div>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="ridePill">🎢</div>
+        <div class="stat-pill" id="markedPill">⭐ 0/9</div>
+      </div>
+
+      <div id="bingoGrid" class="bingo"></div>
+
+      <div id="winBanner" class="hidden card" style="text-align:center; background:linear-gradient(135deg, #fbbf24, #be123c); border:none; margin-bottom:0.8rem;">
+        <div style="font-size:2rem;">🎉 BINGO! 🎉</div>
+        <div style="font-size:0.95rem; margin-top:0.3rem;">You got 3 in a row!</div>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="newCard()">🔀 New Card (Same Ride)</button>
+      <button class="btn btn-ghost btn-block" onclick="backToSetup()" style="margin-top:0.5rem;">← Pick Different Ride</button>
+    </section>
+  </main>
+
+  <script>
+    const RIDES = {
+      "general": {
+        name: "Any Ride / General",
+        emoji: "🎢",
+        items: [
+          "Family in matching shirts",
+          "A water bottle",
+          "Team member greeting guests",
+          "Someone using Universal app",
+          "Minion plush or shirt",
+          "Harry Potter scarf spotted",
+          "Stroller folded up",
+          "Someone yawning",
+          "Express Pass lanyard",
+          "Selfie being taken",
+          "Someone eating a pretzel",
+          "A Mario shirt spotted",
+          "Someone vlogging with camera",
+          "Pair of sunglasses on head",
+          "Freestyle refillable cup"
+        ]
+      },
+      "hagrids": {
+        name: "Hagrid's Motorbike Adventure",
+        emoji: "🏍️",
+        items: [
+          "Motorbike photo op spotted",
+          "Fang (the dog) reference",
+          "Hagrid's hut imagery",
+          "Magical creatures carving",
+          "Hear motorbike revving sound",
+          "Nervous ride guest",
+          "Person saying 'I love Hagrid'",
+          "Wooden wheelbarrow prop",
+          "Someone wearing Gryffindor scarf",
+          "Hippogriff reference",
+          "Forbidden Forest decor",
+          "Person on a long line complaining"
+        ]
+      },
+      "forbidden": {
+        name: "Forbidden Journey (Hogwarts)",
+        emoji: "🏰",
+        items: [
+          "Herbology greenhouse plants",
+          "Portrait of Dumbledore",
+          "Sorting Hat reference",
+          "Gryffindor common room",
+          "Mandrake plant prop",
+          "Talking portrait",
+          "Person says 'this queue is amazing'",
+          "House points hourglasses",
+          "Potion bottles shelf",
+          "Phoenix (Fawkes) spotted",
+          "Professor's desk decor",
+          "Dark Detector item"
+        ]
+      },
+      "gringotts": {
+        name: "Escape from Gringotts",
+        emoji: "🐉",
+        items: [
+          "Bank teller goblin",
+          "Dragon on top of bank",
+          "Gringotts marble columns",
+          "Person wearing Bellatrix costume",
+          "Family with butterbeer mugs",
+          "Knockturn Alley mention",
+          "Vault key prop",
+          "Death Eater reference",
+          "Gold coin decor",
+          "Voldemort reference heard",
+          "Person says 'don't trust the goblins'",
+          "Large chandelier spotted"
+        ]
+      },
+      "velocicoaster": {
+        name: "Jurassic World VelociCoaster",
+        emoji: "🦖",
+        items: [
+          "Raptor pen sign",
+          "Blue (raptor) reference",
+          "Owen Grady reference",
+          "Nervous first-time rider",
+          "Hear raptor screeches",
+          "Jurassic World logo",
+          "Person says 'hold on tight'",
+          "Kid looking scared",
+          "Water mist in queue",
+          "Lab/science equipment",
+          "Person wearing Jurassic shirt",
+          "Tropical plants in queue"
+        ]
+      },
+      "jurassicRiver": {
+        name: "Jurassic Park River Adventure",
+        emoji: "🚣",
+        items: [
+          "T-Rex animatronic reference",
+          "Jungle/rainforest plants",
+          "Someone wearing poncho",
+          "Wet exit guests",
+          "Jurassic Park gate",
+          "Amber fossil decor",
+          "Dinosaur footprint",
+          "Hear T-Rex roar",
+          "DNA helix decor",
+          "Wooden crate prop",
+          "John Hammond reference",
+          "Person says 'I'm not getting wet'"
+        ]
+      },
+      "spiderMan": {
+        name: "Amazing Adventures of Spider-Man",
+        emoji: "🕷️",
+        items: [
+          "Daily Bugle newspaper",
+          "Spider-Man poster",
+          "J. Jonah Jameson office",
+          "New York cityscape",
+          "Car prop",
+          "Villain wanted poster",
+          "Doc Ock reference",
+          "Person doing Spidey pose",
+          "Editorial desk decor",
+          "Web design on wall",
+          "Person wearing Spider-Man shirt",
+          "Hear Peter Parker voice"
+        ]
+      },
+      "hulk": {
+        name: "Incredible Hulk Coaster",
+        emoji: "💚",
+        items: [
+          "Gamma ray / lab equipment",
+          "Green glow light",
+          "Bruce Banner reference",
+          "Warning sign",
+          "Scientific equipment",
+          "Hear Hulk roar",
+          "Family saying 'are we sure?'",
+          "General Ross reference",
+          "Guest wearing purple shorts joke",
+          "Green light tunnel",
+          "Computer monitor prop",
+          "Wind fan / airflow"
+        ]
+      },
+      "mummy": {
+        name: "Revenge of the Mummy",
+        emoji: "🐍",
+        items: [
+          "Egyptian hieroglyphs",
+          "Scarab beetle decor",
+          "Pharaoh statue",
+          "Torch on wall",
+          "Fog effect in queue",
+          "Person says 'it's spooky'",
+          "Scroll prop",
+          "Hear mummy roar/groan",
+          "Archaeology tool",
+          "Sand/tomb set piece",
+          "Sarcophagus decor",
+          "Golden treasure prop"
+        ]
+      },
+      "transformers": {
+        name: "Transformers: The Ride 3D",
+        emoji: "🤖",
+        items: [
+          "Autobot logo",
+          "Decepticon logo",
+          "Optimus Prime reference",
+          "Bumblebee reference",
+          "Hear transformer transform sound",
+          "N.E.S.T. military reference",
+          "Large screen in queue",
+          "3D glasses being distributed",
+          "Person wearing Transformers shirt",
+          "AllSpark cube reference",
+          "Megatron reference",
+          "Lab/military tech prop"
+        ]
+      },
+      "minionMayhem": {
+        name: "Despicable Me Minion Mayhem",
+        emoji: "🟡",
+        items: [
+          "Minion plush spotted",
+          "Gru's house exterior",
+          "Family in Minion shirts",
+          "Young kid in Minion costume",
+          "Banana reference",
+          "Lab/test tube prop",
+          "Hear 'Bee Doh!'",
+          "Dr. Nefario reference",
+          "Margo, Edith, or Agnes reference",
+          "Yellow/blue color scheme",
+          "Freeze ray prop",
+          "Unicorn reference (Agnes)"
+        ]
+      },
+      "men-in-black": {
+        name: "Men in Black: Alien Attack",
+        emoji: "👽",
+        items: [
+          "MIB logo",
+          "Alien decor",
+          "Agent J or K reference",
+          "Family in black",
+          "Neuralyzer prop",
+          "World's Fair pavilion",
+          "Red button decor",
+          "Noisy Cricket gun mentioned",
+          "Alien disguise reference",
+          "Person in sunglasses (joking)",
+          "Little green alien figure",
+          "Hear alien sounds"
+        ]
+      },
+      "rip-ride": {
+        name: "Hollywood Rip Ride Rockit",
+        emoji: "🎸",
+        items: [
+          "Music selection kiosk",
+          "Rockstar silhouette",
+          "Guitar decor",
+          "Amp/speaker stack",
+          "Recording studio reference",
+          "Nervous first-time rider",
+          "Vertical lift warning sign",
+          "Concert poster",
+          "Hear rock music",
+          "Family deciding song choice",
+          "Backstage pass decor",
+          "Guest wearing band shirt"
+        ]
+      },
+      "kong": {
+        name: "Skull Island: Reign of Kong",
+        emoji: "🦍",
+        items: [
+          "Tribal mask decor",
+          "Hear drums in distance",
+          "Skull-shaped rock formation",
+          "Torch on wall",
+          "Insect sound effect",
+          "Jungle plants dense",
+          "Native statue/carving",
+          "Person jumping from a scare",
+          "Expedition gear decor",
+          "Kong reference mural",
+          "Steam / fog effect",
+          "Skull on wall"
+        ]
+      },
+      "et": {
+        name: "E.T. Adventure",
+        emoji: "🚲",
+        items: [
+          "Pine forest decor",
+          "Redwood tree prop",
+          "Hear Williams theme",
+          "Star-shaped light",
+          "Flying bike imagery",
+          "Planet mural",
+          "Family with young kids",
+          "Someone says 'E.T. phone home'",
+          "Flashlight beam",
+          "Mushroom decor",
+          "E.T. plush on someone",
+          "Moon image"
+        ]
+      },
+      "marioKart": {
+        name: "Mario Kart: Bowser's Challenge",
+        emoji: "🏎️",
+        items: [
+          "Mario-themed decor",
+          "Bowser statue/image",
+          "Shell power-up decor",
+          "Mushroom Kingdom art",
+          "Question block",
+          "Princess Peach reference",
+          "Hear Mario theme music",
+          "Person wearing Mario hat",
+          "Yoshi reference",
+          "Power-Up Band worn",
+          "Koopa Troopa shell",
+          "Rainbow Road reference"
+        ]
+      },
+      "ministry": {
+        name: "Battle at the Ministry (Epic Universe)",
+        emoji: "🏛️",
+        items: [
+          "Ministry of Magic phone booth",
+          "Patronus reference",
+          "Wizard/witch robes spotted",
+          "Harry Potter reference",
+          "Hear bell toll",
+          "Magical creature statue",
+          "Stone archway",
+          "Daily Prophet newspaper",
+          "Person wearing house tie",
+          "Floo powder reference",
+          "Ministry of Magic sign",
+          "Dolores Umbridge reference"
+        ]
+      },
+      "wingGliders": {
+        name: "Hiccup's Wing Gliders (HTTYD)",
+        emoji: "🐉",
+        items: [
+          "Viking helmet decor",
+          "Toothless reference",
+          "Dragon statue",
+          "Wooden Viking architecture",
+          "Hear dragon roar",
+          "Berk village sign",
+          "Family in dragon shirts",
+          "Hiccup reference",
+          "Rope/nautical decor",
+          "Night Fury plush",
+          "Astrid reference",
+          "Flaming torch"
+        ]
+      },
+      "frankenstein": {
+        name: "Monsters Unchained: Frankenstein",
+        emoji: "🧟",
+        items: [
+          "Lab/laboratory equipment",
+          "Lightning bolt decor",
+          "Creepy organ music",
+          "Igor reference",
+          "Electrical generator prop",
+          "Nervous guest",
+          "Coffin or tomb decor",
+          "Cobweb on wall",
+          "Mad scientist tools",
+          "Green glow light",
+          "Hear distant scream",
+          "Fog/mist effect"
+        ]
+      }
+    };
+
+    let currentRideKey = 'general';
+    let card = [];
+    let marked = [];
+    let won = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function renderRideList() {
+      const list = document.getElementById('rideList');
+      list.innerHTML = '';
+      Object.entries(RIDES).forEach(([key, r]) => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-ghost';
+        b.style.padding = '1rem 0.6rem';
+        b.style.flexDirection = 'column';
+        b.style.lineHeight = '1.2';
+        b.innerHTML = `<div style="font-size:1.6rem; margin-bottom:0.2rem;">${r.emoji}</div><div style="font-size:0.78rem; font-weight:700;">${r.name}</div>`;
+        b.onclick = () => pickRide(key);
+        list.appendChild(b);
+      });
+    }
+    renderRideList();
+
+    function pickRide(key) {
+      currentRideKey = key;
+      newCard();
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+    }
+
+    function newCard() {
+      const r = RIDES[currentRideKey];
+      const pool = shuffle(r.items);
+      const picks = pool.slice(0, 8);
+      card = [picks[0], picks[1], picks[2], picks[3], 'FREE ⭐', picks[4], picks[5], picks[6], picks[7]];
+      marked = [false, false, false, false, true, false, false, false, false];
+      won = false;
+      document.getElementById('ridePill').textContent = r.emoji + ' ' + r.name;
+      document.getElementById('winBanner').classList.add('hidden');
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('bingoGrid');
+      grid.innerHTML = '';
+      card.forEach((item, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'bingo-cell' + (marked[i] ? ' marked' : '') + (i === 4 ? ' free' : '');
+        cell.textContent = item;
+        cell.onclick = () => toggle(i);
+        grid.appendChild(cell);
+      });
+      const c = marked.filter(Boolean).length;
+      document.getElementById('markedPill').textContent = '⭐ ' + c + '/9';
+      checkWin();
+    }
+
+    function toggle(i) {
+      if (i === 4) return;
+      marked[i] = !marked[i];
+      renderGrid();
+    }
+
+    function checkWin() {
+      const lines = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      const wins = lines.some(l => l.every(idx => marked[idx]));
+      if (wins && !won) {
+        won = true;
+        document.getElementById('winBanner').classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+      }
+    }
+
+    function backToSetup() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('setup').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

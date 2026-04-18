@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Heads Up — Universal</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body.playing { background: #1e1b4b; }
+  </style>
+</head>
+<body>
+  <main id="mainContent">
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🧠 Heads Up</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Hold the phone on your forehead, screen facing the group. They give clues. <br><br>
+          <strong>Tilt phone DOWN (toward chin)</strong> = ✅ Correct<br>
+          <strong>Tilt phone UP (toward forehead)</strong> = ⏭ Pass<br><br>
+          No tilt? Tap the top half (✅) or bottom half (⏭) of the screen instead.
+        </p>
+      </div>
+
+      <h3 style="margin:1.5rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Category</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
+        <button class="btn btn-primary" onclick="startCat('characters')">🧑‍🎤 Characters</button>
+        <button class="btn btn-success" onclick="startCat('movies')">🎬 Movies</button>
+        <button class="btn btn-warn" onclick="startCat('franchises')">⚡ Franchises</button>
+        <button class="btn" onclick="startCat('all')">🎲 Everything</button>
+      </div>
+
+      <div style="margin-top:1.2rem;">
+        <label class="lbl">Round length</label>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-ghost" onclick="setTime(60)" id="t60">60s</button>
+          <button class="btn btn-ghost" onclick="setTime(90)" id="t90">90s</button>
+          <button class="btn btn-ghost" onclick="setTime(120)" id="t120">120s</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">TIME'S UP!</div>
+        <div class="prompt" id="finalScore">0 correct</div>
+        <div class="sub" id="finalPass">0 passed</div>
+      </div>
+      <h3 style="margin:1rem 0 0.5rem; font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Round Recap</h3>
+      <div id="recap" class="card" style="font-size:0.95rem; line-height:1.6;"></div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()" style="margin-top:0.8rem;">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <div id="play" class="fullscreen-prompt normal hidden">
+    <div class="fs-timer" id="fsTimer">60</div>
+    <div id="fsText" style="padding:0 1rem;">Ready?</div>
+    <div class="fs-hint" id="fsHint">Get ready — game starts in 3...</div>
+  </div>
+
+  <script>
+    const DATA = {
+      characters: ["Harry Potter","Hermione","Ron Weasley","Dumbledore","Hagrid","Voldemort","Dobby","Mario","Luigi","Princess Peach","Bowser","Yoshi","Donkey Kong","Hiccup","Toothless","Astrid","Shrek","Donkey","Princess Fiona","Puss in Boots","Po","Master Shifu","Tigress","Alex the Lion","Marty the Zebra","King Julien","Gru","Margo","Edith","Agnes","Bob the Minion","Stuart the Minion","Kevin the Minion","Poppy","Branch","E.T.","Marty McFly","Doc Brown","Spider-Man","Hulk","Wolverine","Doctor Doom","Optimus Prime","Bumblebee","Cat in the Hat","Lorax","Grinch","Cindy Lou Who","Frankenstein","Dracula","Wolfman","Curious George","Buster Moon","Rosita","Johnny","Meena","Boss Baby","Popeye","Olive Oyl","T-Rex","Velociraptor","Triceratops","Owen Grady","Dr. Alan Grant","King Kong","Megatron"],
+      movies: ["Harry Potter","Jurassic Park","Jurassic World","Shrek","How to Train Your Dragon","Kung Fu Panda","Madagascar","Trolls","Puss in Boots","Despicable Me","Minions","Sing","The Lorax","The Grinch","The Secret Life of Pets","E.T.","Back to the Future","King Kong","Frankenstein","Dracula","The Mummy","Spider-Man","X-Men","Avengers","Transformers","Bumblebee","The Cat in the Hat","Horton Hears a Who","Curious George","Hop","Boss Baby","Megamind","Bee Movie","Over the Hedge","Croods","Antz","Spirit","Paddington","Super Mario Bros. Movie"],
+      franchises: ["Harry Potter","Wizarding World","Jurassic Park","Mario","Nintendo","Despicable Me","Minions","Shrek","DreamWorks","Marvel","Star Wars (Disney now)","Transformers","How to Train Your Dragon","Kung Fu Panda","Madagascar","Trolls","Sing","Dr. Seuss","Universal Monsters","Back to the Future","E.T.","King Kong","Curious George","Boss Baby","Pets"]
+    };
+
+    let queue = [], current = null, score = 0, passes = 0, history = [];
+    let roundLength = 60, timer = null, remaining = 0;
+    let canFlip = true;
+    let orientationListener = null;
+
+    function setTime(s) {
+      roundLength = s;
+      ['t60','t90','t120'].forEach(id => document.getElementById(id).style.background = 'transparent');
+      document.getElementById('t' + s).style.background = 'var(--gold)';
+      document.getElementById('t' + s).style.color = '#1e2a38';
+    }
+    setTime(60);
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startCat(cat) {
+      let pool = cat === 'all' ? DATA.characters.concat(DATA.movies, DATA.franchises) : DATA[cat];
+      queue = shuffle(pool);
+      score = 0; passes = 0; history = [];
+      document.getElementById('mainContent').classList.add('hidden');
+      const play = document.getElementById('play');
+      play.classList.remove('hidden');
+      document.body.classList.add('playing');
+      tryFullscreen();
+      requestMotionPermission();
+      countdown(3);
+    }
+
+    function tryFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    }
+
+    function requestMotionPermission() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(state => {
+          if (state === 'granted') attachOrientation();
+        }).catch(()=>{});
+      } else {
+        attachOrientation();
+      }
+    }
+
+    function attachOrientation() {
+      orientationListener = (e) => {
+        if (!canFlip || e.beta == null) return;
+        if (e.beta > -45 && e.beta < 45) markCorrect();
+        else if (e.beta < -135 || e.beta > 135) markPass();
+      };
+      window.addEventListener('deviceorientation', orientationListener);
+    }
+
+    function detachOrientation() {
+      if (orientationListener) window.removeEventListener('deviceorientation', orientationListener);
+    }
+
+    function debounceFlip() { canFlip = false; setTimeout(() => { canFlip = true; }, 1200); }
+
+    function countdown(n) {
+      const fsText = document.getElementById('fsText');
+      const fsHint = document.getElementById('fsHint');
+      fsText.textContent = n;
+      fsHint.textContent = 'Get ready!';
+      if (n === 0) { startRound(); return; }
+      setTimeout(() => countdown(n - 1), 800);
+    }
+
+    function startRound() {
+      remaining = roundLength;
+      document.getElementById('fsTimer').textContent = remaining;
+      document.getElementById('fsHint').textContent = 'Tilt DOWN ✅  •  Tilt UP ⏭  •  Or tap screen halves';
+      next();
+      timer = setInterval(() => {
+        remaining--;
+        document.getElementById('fsTimer').textContent = remaining;
+        if (remaining <= 0) endRound();
+      }, 1000);
+      document.getElementById('play').addEventListener('click', tapHandler);
+    }
+
+    function tapHandler(e) {
+      const half = window.innerHeight / 2;
+      if (e.clientY < half) markCorrect(); else markPass();
+    }
+
+    function next() {
+      if (queue.length === 0) { document.getElementById('fsText').textContent = "No more!"; return; }
+      current = queue.pop();
+      document.getElementById('fsText').textContent = current;
+      flashColor('normal');
+    }
+
+    function markCorrect() {
+      if (!current) return;
+      score++; history.push({word: current, ok: true});
+      flashColor('correct');
+      debounceFlip();
+      setTimeout(next, 600);
+    }
+    function markPass() {
+      if (!current) return;
+      passes++; history.push({word: current, ok: false});
+      flashColor('pass');
+      debounceFlip();
+      setTimeout(next, 600);
+    }
+
+    function flashColor(c) {
+      const p = document.getElementById('play');
+      p.classList.remove('normal','correct','pass');
+      p.classList.add(c);
+    }
+
+    function endRound() {
+      clearInterval(timer);
+      detachOrientation();
+      document.removeEventListener('click', tapHandler);
+      if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      document.body.classList.remove('playing');
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' correct';
+      document.getElementById('finalPass').textContent = passes + ' passed';
+      const recap = document.getElementById('recap');
+      recap.innerHTML = history.map(h => (h.ok ? '✅ ' : '⏭ ') + h.word).join('<br>') || '(no words)';
+    }
+  </script>
+</body>
+</html>
