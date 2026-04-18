@@ -15,26 +15,33 @@
       <div style="width:64px;"></div>
     </div>
 
-    <!-- Setup -->
     <section id="setup" class="section">
       <div class="card">
         <h2 style="margin-bottom:0.6rem;">How to Play</h2>
         <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
-          Phone shows a real Disney park snack or souvenir. Each player whispers/types their guess. Tap "Reveal" to see the actual price — closest WITHOUT going over wins the round!
+          Phone shows a real Disney park snack or souvenir with 4 price options. Pass the phone — whoever's turn it is taps their guess. Get it right, +1 point!
         </p>
       </div>
 
-      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
-      <div id="playerList" class="player-list"></div>
-      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players — tap to include</h3>
+      <div id="rosterGrid" class="roster-grid"></div>
+      <div class="roster-add">
+        <input class="field" id="customInput" placeholder="Add a name..." />
+        <button class="btn" onclick="addCustom()">+</button>
+      </div>
+      <div class="roster-actions">
+        <button class="btn btn-ghost" onclick="selectAll()">Select All</button>
+        <button class="btn btn-ghost" onclick="selectNone()">Clear</button>
+      </div>
+      <div class="roster-summary" id="rosterSummary">0 players selected</div>
 
       <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
     </section>
 
-    <!-- Play -->
     <section id="play" class="section hidden">
       <div class="stat-row">
         <div class="stat-pill" id="roundPill">Round 1</div>
+        <div class="stat-pill" id="turnPill">👤 Player</div>
       </div>
 
       <div class="big-card">
@@ -44,18 +51,13 @@
         <div class="sub" id="locText"></div>
       </div>
 
-      <div id="guessing">
-        <h3 style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.6rem;">Each player enter a guess ($)</h3>
-        <div id="guessRows"></div>
-        <button class="btn btn-success btn-lg btn-block" onclick="reveal()" style="margin-top:0.6rem;">✨ Reveal Price</button>
-      </div>
+      <div id="choices"></div>
 
-      <div id="resultBox" class="hidden">
-        <div class="card" style="text-align:center; margin-top:0.5rem;">
+      <div id="resultBox" class="hidden" style="margin-top:0.7rem;">
+        <div class="card" style="text-align:center;">
           <div style="font-size:0.85rem; color:var(--muted);">ACTUAL PRICE</div>
-          <div style="font-size:2.5rem; font-weight:800; color:var(--gold); margin:0.4rem 0;" id="actualPrice">$0.00</div>
-          <div id="winnerLine" style="font-size:1rem; font-weight:700;"></div>
-          <ol id="resultsList" class="scoreboard" style="margin-top:0.7rem;"></ol>
+          <div style="font-size:2.5rem; font-weight:800; color:var(--gold); margin:0.3rem 0;" id="actualPrice">$0.00</div>
+          <div id="resultLine" style="font-size:1.05rem; font-weight:700;"></div>
         </div>
         <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
       </div>
@@ -63,7 +65,6 @@
       <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.7rem;">End Game</button>
     </section>
 
-    <!-- End -->
     <section id="end" class="section hidden">
       <div class="big-card">
         <div class="label">FINAL SCORES</div>
@@ -76,7 +77,6 @@
   </main>
 
   <script>
-    // Prices are approximate Disney World prices (2025-ish). Played for fun.
     const ITEMS = [
       {name:"Mickey Premium Ice Cream Bar", emoji:"🍦", price:7.00, loc:"Magic Kingdom", cat:"Snack"},
       {name:"Dole Whip (cup)", emoji:"🍍", price:6.50, loc:"Magic Kingdom", cat:"Snack"},
@@ -130,115 +130,147 @@
       {name:"Magic Cookies (4-pack)", emoji:"🍪", price:9.00, loc:"Disney Springs", cat:"Snack"}
     ];
 
-    const STORAGE_KEY = 'price_players';
-    const DEFAULT = ['Player 1','Player 2'];
-    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
-    let scores = {}, queue = [], current = null, count = 0;
+    const FAMILY = ['Trevor','Niki','Rick','Alicia','Mikey','Mila','Michelle','Millie','Michael','Barbara','Eric','Carrie','Tyler','Tanner','Liam','Ian','Sophie','Lainey','Owen','Mia'];
+    const STORAGE_KEY = 'price_selected';
+    const CUSTOM_KEY = 'roster_custom';
+    const DEFAULT_ON = ['Trevor','Niki'];
+    let custom = JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]');
+    let selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || JSON.stringify(DEFAULT_ON)));
+    let players = [], scores = {}, queue = [], current = null, count = 0, turn = 0, answered = false;
 
-    function renderPlayers() {
-      const list = document.getElementById('playerList');
-      list.innerHTML = '';
-      players.forEach((name, i) => {
-        const row = document.createElement('div');
-        row.className = 'player-row';
-        row.innerHTML = `
-          <input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" />
-          <button class="remove" onclick="removePlayer(${i})">✕</button>
-        `;
-        list.appendChild(row);
-      });
-    }
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function updPlayer(i, v) { players[i] = v; save(); }
-    function addPlayer() { players.push(''); renderPlayers(); save(); }
-    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
-    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+    function saveSelected() { localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected])); }
+    function saveCustom() { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); }
+    function renderRoster() {
+      const grid = document.getElementById('rosterGrid');
+      grid.innerHTML = '';
+      FAMILY.forEach(name => grid.appendChild(makeChip(name, false)));
+      custom.forEach((name, i) => grid.appendChild(makeChip(name, true, i)));
+      const cnt = [...selected].filter(n => FAMILY.includes(n) || custom.includes(n)).length;
+      document.getElementById('rosterSummary').textContent = cnt + ' player' + (cnt===1?'':'s') + ' selected';
+    }
+    function makeChip(name, isCustom, idx) {
+      const c = document.createElement('button');
+      c.className = 'chip-toggle' + (selected.has(name) ? ' on' : '') + (isCustom ? ' custom' : '');
+      c.onclick = () => toggleName(name);
+      c.appendChild(document.createTextNode(name));
+      if (isCustom) {
+        const x = document.createElement('span');
+        x.className = 'x'; x.textContent = '✕';
+        x.onclick = (e) => { e.stopPropagation(); custom.splice(idx,1); selected.delete(name); saveCustom(); saveSelected(); renderRoster(); };
+        c.appendChild(x);
+      }
+      return c;
+    }
+    function toggleName(name) { selected.has(name) ? selected.delete(name) : selected.add(name); saveSelected(); renderRoster(); }
+    function addCustom() {
+      const input = document.getElementById('customInput');
+      const v = input.value.trim();
+      if (!v) return;
+      if (!custom.includes(v) && !FAMILY.includes(v)) custom.push(v);
+      selected.add(v);
+      input.value = '';
+      saveCustom(); saveSelected(); renderRoster();
+    }
+    function selectAll() { FAMILY.forEach(n => selected.add(n)); custom.forEach(n => selected.add(n)); saveSelected(); renderRoster(); }
+    function selectNone() { selected.clear(); saveSelected(); renderRoster(); }
 
     function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
     function startGame() {
-      const cleaned = players.map(p => p.trim()).filter(Boolean);
-      if (cleaned.length < 1) { alert('Need at least 1 player.'); return; }
-      players = cleaned;
-      save();
+      players = [...FAMILY, ...custom].filter(n => selected.has(n));
+      if (players.length < 1) { alert('Pick at least 1 player.'); return; }
       scores = {}; players.forEach(p => scores[p] = 0);
       queue = shuffle(ITEMS);
-      count = 0;
+      count = 0; turn = 0;
       document.getElementById('setup').classList.add('hidden');
       document.getElementById('play').classList.remove('hidden');
       next();
+    }
+
+    function roundPrice(p) {
+      // round to a "store-like" price ending in .00, .49, .50, .95, .99
+      if (p < 1) return Math.round(p * 100) / 100;
+      const endings = [0, 0.49, 0.5, 0.95, 0.99];
+      const base = Math.floor(p);
+      // Pick nearest ending
+      let best = base, bestDiff = Math.abs(base - p);
+      endings.forEach(e => {
+        const cand = base + e;
+        const d = Math.abs(cand - p);
+        if (d < bestDiff) { best = cand; bestDiff = d; }
+        const candUp = base + 1 + e;
+        const dUp = Math.abs(candUp - p);
+        if (dUp < bestDiff) { best = candUp; bestDiff = dUp; }
+      });
+      return Math.round(best * 100) / 100;
+    }
+
+    function makeChoices(actual) {
+      // Generate 3 distractors with realistic variance
+      const distractors = new Set();
+      let attempts = 0;
+      while (distractors.size < 3 && attempts < 50) {
+        attempts++;
+        // Variance: 25% to 75% off
+        const variance = 0.25 + Math.random() * 0.5;
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        let fake = actual * (1 + sign * variance);
+        if (fake < 0.99) fake = 0.99 + Math.random() * 3;
+        // Round to store-style
+        fake = roundPrice(fake);
+        if (Math.abs(fake - actual) < Math.max(0.5, actual * 0.10)) continue;
+        distractors.add(fake);
+      }
+      return shuffle([actual, ...distractors]);
     }
 
     function next() {
       if (queue.length === 0) queue = shuffle(ITEMS);
       current = queue.pop();
       count++;
+      answered = false;
       document.getElementById('roundPill').textContent = 'Round ' + count;
+      document.getElementById('turnPill').textContent = '👤 ' + players[turn];
       document.getElementById('catLabel').textContent = current.cat.toUpperCase();
       document.getElementById('emoji').textContent = current.emoji;
       document.getElementById('itemText').textContent = current.name;
       document.getElementById('locText').textContent = '📍 ' + current.loc;
 
-      const rows = document.getElementById('guessRows');
-      rows.innerHTML = '';
-      players.forEach((p, i) => {
-        const row = document.createElement('div');
-        row.className = 'player-row';
-        row.style.marginBottom = '0.5rem';
-        row.innerHTML = `
-          <div style="flex:0.6; font-weight:700; font-size:0.95rem;">${escapeHtml(p)}</div>
-          <input type="number" inputmode="decimal" step="0.01" class="field guess-in" data-player="${escapeHtml(p)}" placeholder="$0.00" />
-        `;
-        rows.appendChild(row);
+      const choicesArr = makeChoices(current.price);
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      choicesArr.forEach(price => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.textContent = '$' + price.toFixed(2);
+        b.onclick = () => answer(b, price);
+        ch.appendChild(b);
       });
 
-      document.getElementById('guessing').classList.remove('hidden');
       document.getElementById('resultBox').classList.add('hidden');
     }
 
-    function reveal() {
-      const inputs = document.querySelectorAll('.guess-in');
-      const guesses = [];
-      inputs.forEach(i => {
-        const v = parseFloat(i.value);
-        if (!isNaN(v)) guesses.push({player: i.dataset.player, guess: v});
-      });
-      if (guesses.length === 0) { alert('Enter at least one guess!'); return; }
-
+    function answer(btn, picked) {
+      if (answered) return;
+      answered = true;
+      const allBtns = document.querySelectorAll('#choices .choice');
       const actual = current.price;
-      // Closest without going over wins. If everyone went over, closest wins anyway.
-      let validGuesses = guesses.filter(g => g.guess <= actual);
-      let winner;
-      if (validGuesses.length > 0) {
-        validGuesses.sort((a,b) => (actual - a.guess) - (actual - b.guess));
-        const closest = actual - validGuesses[0].guess;
-        const tied = validGuesses.filter(g => actual - g.guess === closest);
-        winner = tied.map(g => g.player);
-      } else {
-        // all went over
-        guesses.sort((a,b) => Math.abs(a.guess - actual) - Math.abs(b.guess - actual));
-        const closest = Math.abs(guesses[0].guess - actual);
-        const tied = guesses.filter(g => Math.abs(g.guess - actual) === closest);
-        winner = tied.map(g => g.player);
-      }
-
-      winner.forEach(w => scores[w]++);
+      const correct = Math.abs(picked - actual) < 0.01;
+      allBtns.forEach((b) => {
+        b.style.pointerEvents = 'none';
+        const val = parseFloat(b.textContent.replace('$',''));
+        if (Math.abs(val - actual) < 0.01) b.classList.add('correct');
+      });
+      if (!correct) btn.classList.add('wrong');
+      else scores[players[turn]]++;
 
       document.getElementById('actualPrice').textContent = '$' + actual.toFixed(2);
-      document.getElementById('winnerLine').innerHTML = '🏆 ' + winner.join(' & ') + ' wins this round!';
-
-      // Show results sorted
-      const list = document.getElementById('resultsList');
-      const sorted = guesses.slice().sort((a,b) => Math.abs(a.guess - actual) - Math.abs(b.guess - actual));
-      list.innerHTML = sorted.map(g => {
-        const diff = (g.guess - actual);
-        const tag = diff > 0 ? `over by $${diff.toFixed(2)}` : (diff < 0 ? `under by $${(-diff).toFixed(2)}` : 'EXACT!');
-        const isWin = winner.includes(g.player);
-        return `<li style="${isWin?'background:rgba(251,191,36,0.25);':''}">${escapeHtml(g.player)} <span class="pts">$${g.guess.toFixed(2)} (${tag})</span></li>`;
-      }).join('');
-
-      document.getElementById('guessing').classList.add('hidden');
+      document.getElementById('resultLine').textContent = correct
+        ? '✅ ' + players[turn] + ' nailed it!'
+        : '❌ ' + players[turn] + ' was off';
       document.getElementById('resultBox').classList.remove('hidden');
+      turn = (turn + 1) % players.length;
     }
 
     function endGame() {
@@ -247,12 +279,12 @@
       const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
       const max = sorted[0][1];
       const winners = sorted.filter(([_,v]) => v === max).map(([n]) => n);
-      document.getElementById('winnerText').textContent = max === 0 ? '🤷 No rounds played!' : '🏆 ' + winners.join(' & ');
+      document.getElementById('winnerText').textContent = max === 0 ? '🤷 Tough crowd!' : '🏆 ' + winners.join(' & ');
       const list = document.getElementById('scoreboard');
-      list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} round${v===1?'':'s'} won</span></li>`).join('');
+      list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} pt${v===1?'':'s'}</span></li>`).join('');
     }
 
-    renderPlayers();
+    renderRoster();
   </script>
 </body>
 </html>

@@ -24,9 +24,17 @@
         </p>
       </div>
 
-      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players</h3>
-      <div id="playerList" class="player-list"></div>
-      <button class="btn btn-ghost btn-block" onclick="addPlayer()">+ Add Player</button>
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players — tap to include</h3>
+      <div id="rosterGrid" class="roster-grid"></div>
+      <div class="roster-add">
+        <input class="field" id="customInput" placeholder="Add a name..." />
+        <button class="btn" onclick="addCustom()">+</button>
+      </div>
+      <div class="roster-actions">
+        <button class="btn btn-ghost" onclick="selectAll()">Select All</button>
+        <button class="btn btn-ghost" onclick="selectNone()">Clear</button>
+      </div>
+      <div class="roster-summary" id="rosterSummary">0 players selected</div>
 
       <div style="margin-top:1rem;">
         <label class="lbl"># of Questions</label>
@@ -127,11 +135,53 @@
       {q:"What color are Buzz Lightyear's wings?", choices:["Red and white","Purple and green","Blue and white","Green and blue"], a:1, d:"Medium"}
     ];
 
-    const STORAGE_KEY = 'trivia_players';
-    const DEFAULT = ['Player 1','Player 2'];
+    const FAMILY = ['Trevor','Niki','Rick','Alicia','Mikey','Mila','Michelle','Millie','Michael','Barbara','Eric','Carrie','Tyler','Tanner','Liam','Ian','Sophie','Lainey','Owen','Mia'];
+    const STORAGE_KEY = 'trivia_selected';
+    const CUSTOM_KEY = 'roster_custom';
+    const DEFAULT_ON = ['Trevor','Niki'];
 
-    let players = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || DEFAULT.slice();
-    let scores = {}, qQueue = [], qIdx = 0, totalQs = 10, turn = 0, answered = false;
+    let custom = JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]');
+    let selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || JSON.stringify(DEFAULT_ON)));
+    let players = [], scores = {}, qQueue = [], qIdx = 0, totalQs = 10, turn = 0, answered = false;
+
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function saveSelected() { localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected])); }
+    function saveCustom() { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); }
+
+    function renderRoster() {
+      const grid = document.getElementById('rosterGrid');
+      grid.innerHTML = '';
+      FAMILY.forEach(name => grid.appendChild(makeChip(name, false)));
+      custom.forEach((name, i) => grid.appendChild(makeChip(name, true, i)));
+      const count = [...selected].filter(n => FAMILY.includes(n) || custom.includes(n)).length;
+      document.getElementById('rosterSummary').textContent = count + ' player' + (count===1?'':'s') + ' selected';
+    }
+    function makeChip(name, isCustom, idx) {
+      const c = document.createElement('button');
+      c.className = 'chip-toggle' + (selected.has(name) ? ' on' : '') + (isCustom ? ' custom' : '');
+      c.onclick = () => toggleName(name);
+      c.appendChild(document.createTextNode(name));
+      if (isCustom) {
+        const x = document.createElement('span');
+        x.className = 'x';
+        x.textContent = '✕';
+        x.onclick = (e) => { e.stopPropagation(); custom.splice(idx,1); selected.delete(name); saveCustom(); saveSelected(); renderRoster(); };
+        c.appendChild(x);
+      }
+      return c;
+    }
+    function toggleName(name) { selected.has(name) ? selected.delete(name) : selected.add(name); saveSelected(); renderRoster(); }
+    function addCustom() {
+      const input = document.getElementById('customInput');
+      const v = input.value.trim();
+      if (!v) return;
+      if (!custom.includes(v) && !FAMILY.includes(v)) custom.push(v);
+      selected.add(v);
+      input.value = '';
+      saveCustom(); saveSelected(); renderRoster();
+    }
+    function selectAll() { FAMILY.forEach(n => selected.add(n)); custom.forEach(n => selected.add(n)); saveSelected(); renderRoster(); }
+    function selectNone() { selected.clear(); saveSelected(); renderRoster(); }
 
     function setQs(n) {
       totalQs = n;
@@ -141,32 +191,11 @@
     }
     setQs(10);
 
-    function renderPlayers() {
-      const list = document.getElementById('playerList');
-      list.innerHTML = '';
-      players.forEach((name, i) => {
-        const row = document.createElement('div');
-        row.className = 'player-row';
-        row.innerHTML = `
-          <input class="field" value="${escapeHtml(name)}" oninput="updPlayer(${i}, this.value)" placeholder="Name" />
-          <button class="remove" onclick="removePlayer(${i})">✕</button>
-        `;
-        list.appendChild(row);
-      });
-    }
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function updPlayer(i, v) { players[i] = v; save(); }
-    function addPlayer() { players.push(''); renderPlayers(); save(); }
-    function removePlayer(i) { players.splice(i,1); renderPlayers(); save(); }
-    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
-
     function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
     function startGame() {
-      const cleaned = players.map(p => p.trim()).filter(Boolean);
-      if (cleaned.length < 1) { alert('Need at least 1 player.'); return; }
-      players = cleaned;
-      save();
+      players = [...FAMILY, ...custom].filter(n => selected.has(n));
+      if (players.length < 1) { alert('Pick at least 1 player.'); return; }
       scores = {}; players.forEach(p => scores[p] = 0);
       qQueue = shuffle(QUESTIONS).slice(0, totalQs);
       qIdx = 0; turn = 0;
@@ -229,7 +258,7 @@
       list.innerHTML = sorted.map(([n,v]) => `<li>${escapeHtml(n)}<span class="pts">${v} pt${v===1?'':'s'}</span></li>`).join('');
     }
 
-    renderPlayers();
+    renderRoster();
   </script>
 </body>
 </html>

@@ -236,6 +236,34 @@ label.lbl { display: block; font-size: 0.85rem; color: var(--muted); margin-bott
   border-radius: 10px; font-size: 1.1rem; cursor: pointer;
 }
 
+/* Roster chip picker (tap to toggle) */
+.roster-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0 0.4rem; }
+.chip-toggle {
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid var(--border);
+  color: white;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+}
+.chip-toggle.on { background: var(--gold); color: #1e2a38; border-color: var(--gold); }
+.chip-toggle:active { transform: scale(0.95); }
+.chip-toggle.custom { padding-right: 0.4rem; }
+.chip-toggle .x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.2);
+  font-size: 0.7rem; margin-left: 0.2rem;
+}
+.roster-add { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.roster-add .field { flex: 1; }
+.roster-summary { font-size: 0.85rem; color: var(--muted); margin-top: 0.4rem; text-align: center; }
+.roster-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.roster-actions .btn { flex: 1; padding: 0.55rem 0.6rem; font-size: 0.85rem; }
+
 /* Section spacing */
 .section { margin-bottom: 1.25rem; }
 
