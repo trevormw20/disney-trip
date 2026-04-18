@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Disney Mad Libs</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">📝 Disney Mad Libs</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows blanks one at a time. Each player picks one word from the choices, then passes the phone. After all blanks are filled, the absurd story is revealed!
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start a Story</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="blankPill">Blank 1 / 6</div>
+        <div class="stat-pill" id="storyPill">📖 Story 1</div>
+      </div>
+
+      <div class="big-card" style="min-height:auto; padding:1.2rem 1rem;">
+        <div class="label" id="catLabel">PICK A:</div>
+        <div class="prompt" id="categoryText" style="font-size:clamp(1.6rem, 6vw, 2.2rem);">CHARACTER</div>
+        <div class="sub" style="margin-top:0.4rem; font-style:italic;">Pass the phone to the next player!</div>
+      </div>
+
+      <div id="choices" style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"></div>
+      <button class="btn btn-warn btn-block" onclick="reshuffle()" style="margin-top:0.6rem;">🔀 Different Choices</button>
+    </section>
+
+    <section id="reveal" class="section hidden">
+      <div class="big-card" style="min-height:auto; padding:1.5rem 1rem;">
+        <div class="label">YOUR STORY</div>
+        <div id="storyText" style="font-size:1.05rem; line-height:1.6; color:#1e2a38; margin-top:0.6rem; text-align:left;"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="newStory()">📝 New Story</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const WORD_BANK = {
+      character: ["Mickey","Elsa","Stitch","Goofy","Donald Duck","Olaf","Buzz Lightyear","Woody","Genie","Belle","Simba","Pluto","Tinker Bell","Maui","Moana","Mulan","Hades","Hercules","Mike Wazowski","Dory","Jack Sparrow","Aladdin","Cruella","Maleficent","Yoda","Spider-Man","Iron Man","Hulk","Mickey Mouse"],
+      villain: ["Maleficent","Ursula","Scar","Jafar","Hades","Cruella","Mother Gothel","Captain Hook","Gaston","Yzma","Dr. Facilier","Lotso","Stinky Pete"],
+      animal: ["dragon","cat","duck","panda","horse","rat","fish","elephant","tiger","monkey","mouse","unicorn","penguin","lion","bear","giraffe","raccoon","koala","squirrel","reindeer"],
+      adjective: ["sparkly","grumpy","gigantic","invisible","sneaky","cheerful","sweaty","fabulous","stinky","magical","bouncy","tiny","glowing","fuzzy","slimy","ridiculous","majestic","awkward","dramatic","mischievous"],
+      verb: ["dancing","singing","exploding","sneezing","floating","running","screaming","whispering","laughing","cooking","spinning","crying","yelling","tap-dancing","yodeling","wrestling","napping","juggling"],
+      verbed: ["danced","sneezed","exploded","screamed","tap-danced","tripped","wiggled","yelled","sang","whispered","wrestled","yodeled","floated","tumbled","cackled","barfed","spun"],
+      food: ["churro","Mickey waffle","pickle","ice cream","turkey leg","Dole Whip","popcorn","macaroni","spaghetti","pizza","blue milk","butter beer","sushi","lasagna"],
+      place: ["Cinderella's castle","Tomorrowland","the Tea Cups","Splash Mountain","the Haunted Mansion","Hogwarts","Andy's room","Atlantis","the bathroom line","the gift shop","Pride Rock","Arendelle","Wakanda","the Death Star","the rainforest"],
+      ride: ["Space Mountain","Tower of Terror","Pirates of the Caribbean","Big Thunder Mountain","It's a Small World","Splash Mountain","Tea Cups","Dumbo","Peter Pan's Flight","Buzz Lightyear","Avatar Flight of Passage","Slinky Dog Dash"],
+      noun: ["banana","umbrella","sock","trumpet","pickle","pizza","wand","spaceship","bicycle","balloon","fork","crown","lightsaber","trampoline","kazoo","pancake","sandwich","blanket","bucket","frying pan"],
+      number: ["3","17","42","100","999","one million","seventeen and a half","negative 5","forty-two","8 trillion","exactly 1"],
+      bodypart: ["nose","elbow","big toe","eyebrow","mustache","kneecap","earlobe","belly button","pinky","forehead"],
+      sound: ["BOOM","SPLAT","WAHOO","YEET","WHOOSH","KABLAMO","SQUEAK","HONK","MOO","BAZINGA","SHAZAM","POOF","BOING"],
+      emotion: ["overjoyed","terrified","confused","jealous","exhausted","thrilled","grumpy","embarrassed","starstruck","hangry","ecstatic","horrified"]
+    };
+
+    const CAT_LABELS = {
+      character: "DISNEY CHARACTER",
+      villain: "DISNEY VILLAIN",
+      animal: "ANIMAL",
+      adjective: "ADJECTIVE",
+      verb: "VERB (-ing)",
+      verbed: "VERB (past tense)",
+      food: "PARK FOOD",
+      place: "PARK / DISNEY PLACE",
+      ride: "DISNEY RIDE",
+      noun: "RANDOM OBJECT",
+      number: "NUMBER",
+      bodypart: "BODY PART",
+      sound: "SILLY SOUND",
+      emotion: "EMOTION"
+    };
+
+    const STORIES = [
+      {
+        title: "A Day at the Park",
+        slots: ["character","emotion","ride","number","verbed","food","character","sound","villain","place","adjective","ride"],
+        template: "Today, [0] arrived at Magic Kingdom feeling [1]. They sprinted straight to [2] and waited [3] hours in line. When the ride started, they [4] so loudly the whole car jumped! Afterward, they ate a giant [5] with [6]. Suddenly, [7]! A wild [8] appeared, chasing everyone toward [9]. The day ended on the [10] [11]."
+      },
+      {
+        title: "Mickey's Mishap",
+        slots: ["character","verbed","place","noun","emotion","villain","number","verb","sound","food"],
+        template: "Mickey woke up next to [0]. They had [1] all night in [2], using a [3] as a pillow. Mickey felt [4] until [5] showed up demanding [6] dollars. They started [7] until everyone heard [8] and a giant [9] fell from the sky."
+      },
+      {
+        title: "The Best Disney Day Ever",
+        slots: ["adjective","character","ride","number","emotion","food","verb","place","villain","verbed","number","character"],
+        template: "It was a perfectly [0] morning when [1] decided to ride [2] exactly [3] times in a row. They felt [4] but absolutely needed a [5] to keep going. While [6] in [7], they bumped into [8] who [9] for [10] minutes straight. The day ended with everyone hugging [11]."
+      },
+      {
+        title: "The Princess Disaster",
+        slots: ["character","place","verbed","noun","villain","emotion","sound","ride","food","adjective","character"],
+        template: "Princess [0] was strolling through [1] when she suddenly [2] over a [3]. [4] laughed [5]ly at her. They went [6] on [7] together and ate a [8] [9]. By the end, even [10] was their best friend."
+      },
+      {
+        title: "The Ride Operator's Worst Shift",
+        slots: ["adjective","ride","number","character","verbed","food","sound","villain","place","emotion","number"],
+        template: "It was a [0] Tuesday when the [1] broke down for the [2] time that day. [3] had just [4] all over the [5] when [6] echoed through the park. Then [7] showed up demanding to ride [8] again. The cast member felt [9] and clocked out [10] hours early."
+      },
+      {
+        title: "A Night in Cinderella's Castle",
+        slots: ["character","place","verb","sound","villain","verbed","food","number","character","emotion"],
+        template: "After hours, [0] snuck into [1] and started [2] in the throne room. They heard [3] coming from upstairs — it was [4]! They [5] together for a slice of [6], all while [7] ghosts watched. By morning, [8] arrived feeling totally [9]."
+      }
+    ];
+
+    let currentStory = null;
+    let storyIdx = 0;
+    let blankIdx = 0;
+    let filled = [];
+    let currentChoices = [];
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+    function pick(arr, n) { return shuffle(arr).slice(0, n); }
+
+    function startGame() {
+      storyIdx++;
+      currentStory = STORIES[Math.floor(Math.random() * STORIES.length)];
+      blankIdx = 0;
+      filled = [];
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      document.getElementById('reveal').classList.add('hidden');
+      showBlank();
+    }
+
+    function newStory() { startGame(); }
+
+    function showBlank() {
+      if (blankIdx >= currentStory.slots.length) { reveal(); return; }
+      const cat = currentStory.slots[blankIdx];
+      document.getElementById('blankPill').textContent = `Blank ${blankIdx + 1} / ${currentStory.slots.length}`;
+      document.getElementById('storyPill').textContent = '📖 ' + currentStory.title;
+      document.getElementById('categoryText').textContent = CAT_LABELS[cat] || cat.toUpperCase();
+      currentChoices = pick(WORD_BANK[cat], 6);
+      renderChoices();
+    }
+
+    function renderChoices() {
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      currentChoices.forEach(word => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-primary';
+        b.style.padding = '0.9rem 0.5rem';
+        b.style.fontSize = '0.95rem';
+        b.style.lineHeight = '1.2';
+        b.textContent = word;
+        b.onclick = () => choose(word);
+        ch.appendChild(b);
+      });
+    }
+
+    function reshuffle() {
+      const cat = currentStory.slots[blankIdx];
+      currentChoices = pick(WORD_BANK[cat], 6);
+      renderChoices();
+    }
+
+    function choose(word) {
+      filled.push(word);
+      blankIdx++;
+      showBlank();
+    }
+
+    function reveal() {
+      let text = currentStory.template;
+      filled.forEach((word, i) => {
+        text = text.replace('[' + i + ']', '<strong style="color:#dc2626;">' + word + '</strong>');
+      });
+      document.getElementById('storyText').innerHTML = '<div style="font-weight:700; margin-bottom:0.6rem; color:#1a6fc4;">📖 ' + currentStory.title + '</div>' + text;
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('reveal').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

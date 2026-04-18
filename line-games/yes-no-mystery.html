@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Yes/No Mystery</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">❓ Yes/No Mystery</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone secretly picks a Disney character. Group asks YES/NO questions out loud — phone holder taps the answer. Try to guess in 20 questions! When ready, tap "Guess" to pick from 4 options.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start a Round</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="qPill">❓ 20 Q's left</div>
+        <div class="stat-pill" id="historyToggle" onclick="toggleHistory()" style="cursor:pointer;">📜 History</div>
+      </div>
+
+      <div class="card" style="text-align:center; padding:1.5rem;">
+        <div style="font-size:0.85rem; color:var(--muted);">PHONE HOLDER</div>
+        <div style="font-size:1.5rem; font-weight:800; color:var(--gold); margin:0.4rem 0;">Ask the group a yes/no question</div>
+        <div style="font-size:0.95rem; color:var(--muted); font-style:italic;">Then tap their answer below.</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-top:0.7rem;">
+        <button class="btn btn-success btn-lg" onclick="recordAnswer('yes')">✅ Yes</button>
+        <button class="btn btn-warn btn-lg" onclick="recordAnswer('maybe')">🤔 Maybe</button>
+        <button class="btn btn-danger btn-lg" onclick="recordAnswer('no')">❌ No</button>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="showGuess()" style="margin-top:0.7rem;">🎯 Guess Now</button>
+      <button class="btn btn-ghost btn-block" onclick="giveUp()" style="margin-top:0.5rem;">🏳️ Give Up — Show Answer</button>
+
+      <div id="historyBox" class="hidden card" style="margin-top:0.7rem; max-height:200px; overflow-y:auto;">
+        <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.4rem;">QUESTIONS ASKED</div>
+        <div id="historyList" style="font-size:0.9rem; line-height:1.5;"></div>
+      </div>
+    </section>
+
+    <section id="guess" class="section hidden">
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:0.5rem;">🎯 Pick Your Guess</h3>
+        <div style="font-size:0.9rem; color:var(--muted);">Used <span id="usedQs">0</span> question(s)</div>
+      </div>
+      <div id="guessChoices" style="margin-top:0.6rem;"></div>
+      <button class="btn btn-ghost btn-block" onclick="backToPlay()" style="margin-top:0.6rem;">← Keep Asking</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label" id="endLabel">RESULT</div>
+        <div class="prompt" id="resultText">—</div>
+        <div class="sub" id="resultSub">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 New Round</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    // Each character has hint tags so the phone holder can answer accurately when needed
+    // (The group asks freely; phone holder uses these tags as reference if unsure.)
+    const CHARS = [
+      {name:"Mickey Mouse", tags:["male","mouse","disney","red shorts","wears gloves"]},
+      {name:"Minnie Mouse", tags:["female","mouse","bow","disney"]},
+      {name:"Donald Duck", tags:["male","duck","sailor","disney"]},
+      {name:"Goofy", tags:["male","dog","tall","clumsy","disney"]},
+      {name:"Elsa", tags:["female","royalty","ice powers","frozen","blonde"]},
+      {name:"Anna", tags:["female","royalty","frozen","redhead"]},
+      {name:"Olaf", tags:["snowman","frozen","cheerful","male"]},
+      {name:"Simba", tags:["male","lion","king","african","lion king"]},
+      {name:"Mufasa", tags:["male","lion","father","king","lion king"]},
+      {name:"Ariel", tags:["female","mermaid","redhead","royalty","sings"]},
+      {name:"Belle", tags:["female","books","beauty and the beast","brown hair"]},
+      {name:"Beast", tags:["male","beast","royalty","beauty and the beast"]},
+      {name:"Aladdin", tags:["male","street","magic carpet","aladdin"]},
+      {name:"Jasmine", tags:["female","royalty","aladdin","tiger"]},
+      {name:"Genie", tags:["male","blue","wishes","aladdin"]},
+      {name:"Stitch", tags:["alien","blue","experiment","lilo and stitch"]},
+      {name:"Lilo", tags:["female","child","hawaiian","lilo and stitch"]},
+      {name:"Moana", tags:["female","ocean","polynesian","moana","heroine"]},
+      {name:"Maui", tags:["male","demigod","tattoos","moana","strong"]},
+      {name:"Buzz Lightyear", tags:["toy","space ranger","wings","toy story","male"]},
+      {name:"Woody", tags:["toy","cowboy","male","toy story"]},
+      {name:"Jessie", tags:["toy","cowgirl","female","toy story","redhead"]},
+      {name:"Sulley", tags:["male","monster","blue","monsters inc"]},
+      {name:"Mike Wazowski", tags:["male","monster","green","one eye","monsters inc"]},
+      {name:"Boo", tags:["female","child","human","monsters inc"]},
+      {name:"Nemo", tags:["male","fish","clownfish","child","finding nemo"]},
+      {name:"Dory", tags:["female","fish","blue","forgetful","finding nemo"]},
+      {name:"Mr. Incredible", tags:["male","superhero","strong","incredibles"]},
+      {name:"Elastigirl", tags:["female","superhero","stretchy","incredibles"]},
+      {name:"Wall-E", tags:["robot","trash","male","wall-e"]},
+      {name:"Remy", tags:["male","rat","chef","ratatouille"]},
+      {name:"Carl Fredricksen", tags:["male","old","balloons","up","widower"]},
+      {name:"Joy", tags:["female","emotion","yellow","inside out"]},
+      {name:"Sadness", tags:["female","emotion","blue","inside out"]},
+      {name:"Anger", tags:["male","emotion","red","inside out"]},
+      {name:"Miguel", tags:["male","child","music","coco","mexican"]},
+      {name:"Tiana", tags:["female","royalty","frog","new orleans","princess and the frog"]},
+      {name:"Rapunzel", tags:["female","royalty","long hair","tangled","blonde"]},
+      {name:"Mulan", tags:["female","warrior","chinese","mulan"]},
+      {name:"Hercules", tags:["male","demigod","strong","hercules"]},
+      {name:"Peter Pan", tags:["male","child","flies","peter pan","green"]},
+      {name:"Tinker Bell", tags:["female","fairy","tiny","peter pan","blonde"]},
+      {name:"Snow White", tags:["female","royalty","apple","snow white","fair"]},
+      {name:"Cinderella", tags:["female","royalty","slipper","cinderella","blonde"]},
+      {name:"Aurora", tags:["female","royalty","sleeping beauty","blonde"]},
+      {name:"Maleficent", tags:["female","villain","horns","sleeping beauty"]},
+      {name:"Cruella", tags:["female","villain","fur","101 dalmatians"]},
+      {name:"Pinocchio", tags:["male","wooden","puppet","pinocchio"]},
+      {name:"Alice", tags:["female","child","blonde","alice in wonderland"]},
+      {name:"Pooh", tags:["bear","yellow","male","winnie the pooh"]},
+      {name:"Tigger", tags:["tiger","orange","male","winnie the pooh","bouncy"]},
+      {name:"Merida", tags:["female","royalty","brave","redhead","scottish"]},
+      {name:"Vanellope", tags:["female","child","racer","wreck it ralph"]},
+      {name:"Wreck-It Ralph", tags:["male","large","video game","wreck it ralph"]},
+      {name:"Judy Hopps", tags:["female","rabbit","police","zootopia"]},
+      {name:"Mirabel", tags:["female","encanto","glasses","colombian"]},
+      {name:"Yoda", tags:["male","green","jedi","star wars","wise","small"]},
+      {name:"Spider-Man", tags:["male","superhero","spider","marvel","new york"]},
+      {name:"Iron Man", tags:["male","superhero","suit","marvel","tony stark"]},
+      {name:"Hulk", tags:["male","superhero","green","strong","marvel"]},
+      {name:"Jack Sparrow", tags:["male","pirate","captain","pirates of caribbean"]}
+    ];
+
+    let target = null;
+    let questionsLeft = 20;
+    let history = []; // array of {q: text, ans: yes/no/maybe}
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      target = CHARS[Math.floor(Math.random() * CHARS.length)];
+      questionsLeft = 20;
+      history = [];
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      document.getElementById('historyBox').classList.add('hidden');
+      updatePill();
+      renderHistory();
+    }
+
+    function updatePill() {
+      document.getElementById('qPill').textContent = '❓ ' + questionsLeft + ' Q\'s left';
+    }
+
+    function recordAnswer(ans) {
+      if (questionsLeft <= 0) return;
+      questionsLeft--;
+      history.push({ans, q: 'Q' + (history.length + 1)});
+      updatePill();
+      renderHistory();
+      if (questionsLeft === 0) {
+        // forced to guess
+        showGuess();
+      }
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = history.length === 0
+        ? '<em style="color:var(--muted);">No questions asked yet.</em>'
+        : history.map((h, i) => {
+            const icon = h.ans === 'yes' ? '✅' : h.ans === 'no' ? '❌' : '🤔';
+            return `<div>${icon} Q${i+1}: ${h.ans.toUpperCase()}</div>`;
+          }).join('');
+    }
+
+    function toggleHistory() {
+      document.getElementById('historyBox').classList.toggle('hidden');
+    }
+
+    function showGuess() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('guess').classList.remove('hidden');
+      document.getElementById('usedQs').textContent = (20 - questionsLeft);
+      const pool = CHARS.filter(c => c.name !== target.name);
+      const distractors = shuffle(pool).slice(0, 3).map(c => c.name);
+      const opts = shuffle([target.name, ...distractors]);
+      const ch = document.getElementById('guessChoices');
+      ch.innerHTML = '';
+      opts.forEach(name => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.textContent = name;
+        b.onclick = () => makeGuess(name);
+        ch.appendChild(b);
+      });
+    }
+
+    function backToPlay() {
+      document.getElementById('guess').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+    }
+
+    function makeGuess(name) {
+      const correct = name === target.name;
+      document.getElementById('guess').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      const used = 20 - questionsLeft;
+      if (correct) {
+        document.getElementById('endLabel').textContent = '🎉 CORRECT!';
+        document.getElementById('resultText').textContent = target.name;
+        document.getElementById('resultSub').textContent = 'Guessed in ' + used + ' question' + (used===1?'':'s') + '!';
+      } else {
+        document.getElementById('endLabel').textContent = '❌ NOPE';
+        document.getElementById('resultText').textContent = 'It was ' + target.name;
+        document.getElementById('resultSub').textContent = 'You guessed ' + name;
+      }
+    }
+
+    function giveUp() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('endLabel').textContent = '🏳️ GAVE UP';
+      document.getElementById('resultText').textContent = target.name;
+      document.getElementById('resultSub').textContent = 'Better luck next time!';
+    }
+  </script>
+</body>
+</html>

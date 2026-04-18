@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Year Guess — Disney</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">📅 Year Guess</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a Disney movie or ride. Pick the year it released — within 5 years counts as a near miss (1 pt), exact = 3 pts. 10 rounds.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 10</div>
+        <div class="stat-pill" id="scorePill">⭐ 0</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label" id="typeLabel">MOVIE</div>
+        <div style="font-size:3.5rem; line-height:1;" id="emoji">🎬</div>
+        <div class="prompt" id="itemText" style="font-size:clamp(1.4rem, 5vw, 1.9rem); margin-top:0.5rem;">Item</div>
+        <div class="sub" id="releaseYear" style="margin-top:0.4rem;"></div>
+      </div>
+
+      <div id="choices"></div>
+      <button class="btn btn-ghost btn-block hidden" id="nextBtn" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORE</div>
+        <div class="prompt" id="finalScore">0 pts</div>
+        <div class="sub" id="finalRank">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const ITEMS = [
+      {name:"Snow White and the Seven Dwarfs", emoji:"🍎", year:1937, type:"Movie"},
+      {name:"Pinocchio", emoji:"🪵", year:1940, type:"Movie"},
+      {name:"Bambi", emoji:"🦌", year:1942, type:"Movie"},
+      {name:"Cinderella", emoji:"👠", year:1950, type:"Movie"},
+      {name:"Peter Pan", emoji:"🧚", year:1953, type:"Movie"},
+      {name:"Sleeping Beauty", emoji:"😴", year:1959, type:"Movie"},
+      {name:"101 Dalmatians", emoji:"🐶", year:1961, type:"Movie"},
+      {name:"Mary Poppins", emoji:"☂️", year:1964, type:"Movie"},
+      {name:"The Jungle Book", emoji:"🐯", year:1967, type:"Movie"},
+      {name:"The Little Mermaid", emoji:"🧜‍♀️", year:1989, type:"Movie"},
+      {name:"Beauty and the Beast", emoji:"🌹", year:1991, type:"Movie"},
+      {name:"Aladdin", emoji:"🪔", year:1992, type:"Movie"},
+      {name:"The Lion King", emoji:"🦁", year:1994, type:"Movie"},
+      {name:"Toy Story", emoji:"🤠", year:1995, type:"Movie"},
+      {name:"Hercules", emoji:"💪", year:1997, type:"Movie"},
+      {name:"Mulan", emoji:"⚔️", year:1998, type:"Movie"},
+      {name:"Tarzan", emoji:"🌴", year:1999, type:"Movie"},
+      {name:"Monsters Inc", emoji:"👹", year:2001, type:"Movie"},
+      {name:"Finding Nemo", emoji:"🐠", year:2003, type:"Movie"},
+      {name:"The Incredibles", emoji:"🦸", year:2004, type:"Movie"},
+      {name:"Cars", emoji:"🚗", year:2006, type:"Movie"},
+      {name:"Ratatouille", emoji:"🐀", year:2007, type:"Movie"},
+      {name:"Wall-E", emoji:"🤖", year:2008, type:"Movie"},
+      {name:"Up", emoji:"🎈", year:2009, type:"Movie"},
+      {name:"The Princess and the Frog", emoji:"🐸", year:2009, type:"Movie"},
+      {name:"Tangled", emoji:"💇‍♀️", year:2010, type:"Movie"},
+      {name:"Brave", emoji:"🏹", year:2012, type:"Movie"},
+      {name:"Frozen", emoji:"❄️", year:2013, type:"Movie"},
+      {name:"Big Hero 6", emoji:"🤖", year:2014, type:"Movie"},
+      {name:"Inside Out", emoji:"🧠", year:2015, type:"Movie"},
+      {name:"Zootopia", emoji:"🐰", year:2016, type:"Movie"},
+      {name:"Moana", emoji:"🌊", year:2016, type:"Movie"},
+      {name:"Coco", emoji:"💀", year:2017, type:"Movie"},
+      {name:"Frozen 2", emoji:"❄️", year:2019, type:"Movie"},
+      {name:"Soul", emoji:"🎷", year:2020, type:"Movie"},
+      {name:"Encanto", emoji:"🏠", year:2021, type:"Movie"},
+      {name:"Turning Red", emoji:"🐼", year:2022, type:"Movie"},
+      {name:"Inside Out 2", emoji:"🧠", year:2024, type:"Movie"},
+      // Rides
+      {name:"It's a Small World (Disneyland)", emoji:"🌍", year:1966, type:"Ride"},
+      {name:"Pirates of the Caribbean", emoji:"🏴‍☠️", year:1967, type:"Ride"},
+      {name:"Haunted Mansion", emoji:"👻", year:1969, type:"Ride"},
+      {name:"Magic Kingdom (park opens)", emoji:"🏰", year:1971, type:"Park"},
+      {name:"Space Mountain (MK)", emoji:"🚀", year:1975, type:"Ride"},
+      {name:"Big Thunder Mountain", emoji:"⛰️", year:1980, type:"Ride"},
+      {name:"EPCOT (park opens)", emoji:"🌐", year:1982, type:"Park"},
+      {name:"Splash Mountain (original)", emoji:"💦", year:1989, type:"Ride"},
+      {name:"Hollywood Studios (park opens)", emoji:"🎬", year:1989, type:"Park"},
+      {name:"Tower of Terror", emoji:"🏨", year:1994, type:"Ride"},
+      {name:"Animal Kingdom (park opens)", emoji:"🦒", year:1998, type:"Park"},
+      {name:"Test Track", emoji:"🚗", year:1999, type:"Ride"},
+      {name:"Rock 'n' Roller Coaster", emoji:"🎸", year:1999, type:"Ride"},
+      {name:"Expedition Everest", emoji:"🏔️", year:2006, type:"Ride"},
+      {name:"Toy Story Mania", emoji:"🤠", year:2008, type:"Ride"},
+      {name:"Seven Dwarfs Mine Train", emoji:"💎", year:2014, type:"Ride"},
+      {name:"Frozen Ever After", emoji:"❄️", year:2016, type:"Ride"},
+      {name:"Avatar Flight of Passage", emoji:"🌿", year:2017, type:"Ride"},
+      {name:"Slinky Dog Dash", emoji:"🐕", year:2018, type:"Ride"},
+      {name:"Rise of the Resistance", emoji:"⚔️", year:2019, type:"Ride"},
+      {name:"Mickey & Minnie's Runaway Railway", emoji:"🐭", year:2020, type:"Ride"},
+      {name:"Cosmic Rewind", emoji:"🚀", year:2022, type:"Ride"},
+      {name:"Tron Lightcycle Run", emoji:"💿", year:2023, type:"Ride"},
+      {name:"Tiana's Bayou Adventure", emoji:"🐸", year:2024, type:"Ride"}
+    ];
+
+    let queue = [], current = null, score = 0, round = 0, totalRounds = 10, answered = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(ITEMS).slice(0, totalRounds);
+      score = 0; round = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function makeYearChoices(actual) {
+      const offsets = [0, -10, -3, 7, -20, 15];
+      const set = new Set([actual]);
+      let i = 1;
+      while (set.size < 4 && i < offsets.length) {
+        const cand = actual + offsets[i];
+        if (cand >= 1937 && cand <= 2025 && !set.has(cand)) set.add(cand);
+        i++;
+      }
+      // Fill remaining if needed
+      while (set.size < 4) {
+        const cand = actual + (Math.floor(Math.random() * 40) - 20);
+        if (cand >= 1937 && cand <= 2025 && !set.has(cand)) set.add(cand);
+      }
+      return shuffle([...set]);
+    }
+
+    function next() {
+      if (round >= totalRounds || queue.length === 0) { endGame(); return; }
+      round++;
+      answered = false;
+      current = queue.pop();
+      document.getElementById('roundPill').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('scorePill').textContent = '⭐ ' + score;
+      document.getElementById('typeLabel').textContent = current.type.toUpperCase();
+      document.getElementById('emoji').textContent = current.emoji;
+      document.getElementById('itemText').textContent = current.name;
+      document.getElementById('releaseYear').textContent = '';
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      const opts = makeYearChoices(current.year);
+      opts.forEach(yr => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.textContent = yr;
+        b.onclick = () => answer(b, yr);
+        ch.appendChild(b);
+      });
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    function answer(btn, yr) {
+      if (answered) return;
+      answered = true;
+      const diff = Math.abs(yr - current.year);
+      let pts = 0, line = '';
+      if (diff === 0) { pts = 3; line = '🎯 Exact! +3'; }
+      else if (diff <= 5) { pts = 1; line = '✨ Close (within 5) +1'; }
+      else { pts = 0; line = '❌ Off by ' + diff + ' years'; }
+      score += pts;
+      document.querySelectorAll('#choices .choice').forEach(b => {
+        b.style.pointerEvents = 'none';
+        if (parseInt(b.textContent) === current.year) b.classList.add('correct');
+      });
+      if (pts === 0) btn.classList.add('wrong');
+      document.getElementById('releaseYear').innerHTML = '<strong>Actual: ' + current.year + '</strong> · ' + line;
+      document.getElementById('nextBtn').classList.remove('hidden');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' pts';
+      let rank = "👍 Casual fan";
+      if (score >= 27) rank = "👑 Disney Historian!";
+      else if (score >= 20) rank = "🌟 Year Wizard";
+      else if (score >= 12) rank = "🎬 Solid";
+      else if (score >= 6) rank = "📚 Time to brush up";
+      document.getElementById('finalRank').textContent = rank;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Memorize the Scene</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .scene-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;
+      background: white; border-radius: 14px; padding: 0.8rem;
+    }
+    .scene-cell {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 2.6rem; background: #f0f4f8; border-radius: 10px;
+    }
+    .countdown-big { font-size: 4rem; font-weight: 800; color: var(--gold); text-align: center; margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🧠 Memorize the Scene</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a Disney scene with items for 15 seconds. Memorize it! Then answer multiple choice questions about what you saw. 5 rounds.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="scene" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 5</div>
+        <div class="stat-pill" id="memTimer">⏱ 15</div>
+      </div>
+      <div class="card">
+        <div style="text-align:center; font-size:0.85rem; color:var(--muted); margin-bottom:0.6rem;">MEMORIZE THIS SCENE</div>
+        <div class="scene-grid" id="sceneGrid"></div>
+      </div>
+    </section>
+
+    <section id="quiz" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill2">Round 1 / 5</div>
+        <div class="stat-pill" id="scorePill">⭐ 0</div>
+      </div>
+
+      <div class="big-card" style="min-height:auto; padding:1.5rem 1rem;">
+        <div class="label">QUESTION <span id="qNum">1</span></div>
+        <div class="prompt" id="qText" style="font-size:clamp(1.3rem, 5vw, 1.8rem);">Question</div>
+      </div>
+
+      <div id="choices"></div>
+      <button class="btn btn-ghost btn-block hidden" id="nextBtn" onclick="nextQuestion()" style="margin-top:0.7rem;">Next →</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORE</div>
+        <div class="prompt" id="finalScore">0</div>
+        <div class="sub" id="finalRank">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    // Pool of emoji items by theme
+    const ITEM_POOL = ["🏰","🐭","🎈","🍦","🥨","🎢","👑","🦁","🐠","🧜‍♀️","🎩","🪄","🌟","☀️","🌙","🍿","🎬","🐯","🐰","🦒","🐼","🦊","👸","🤴","🧚","🎀","🎁","🌹","💎","🐉","🦊","⚔️","🌊","🎵","🎤","🚀","🌈","🦋","🐢","🐶","🐱","🌳","🍎","🍩","🎟️","🎯","🎪","🎨","🥁"];
+
+    let scenes = []; // each: { items: [emoji×N], questions: [{q, correct, distractors}] }
+    let round = 0, totalRounds = 5;
+    let currentScene = null;
+    let qIdx = 0;
+    let score = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+    function pick(arr, n) { return shuffle(arr).slice(0, n); }
+
+    function generateScene() {
+      // 8 unique items, plus duplicates: total 12 cells in 4x3 grid
+      const unique = pick(ITEM_POOL, 8);
+      // 4 cells will be duplicates of the unique items (random)
+      const dups = [];
+      for (let i = 0; i < 4; i++) dups.push(unique[Math.floor(Math.random() * unique.length)]);
+      const items = shuffle([...unique, ...dups]); // 12 cells
+
+      // Generate 3 questions about this scene
+      const qs = [];
+
+      // Q1: count of a specific emoji
+      const countTarget = unique[Math.floor(Math.random() * unique.length)];
+      const actualCount = items.filter(i => i === countTarget).length;
+      const countOpts = [actualCount, actualCount + 1, Math.max(0, actualCount - 1), actualCount + 2];
+      qs.push({
+        q: "How many " + countTarget + " were there?",
+        correct: actualCount,
+        choices: shuffle([...new Set(countOpts)].slice(0, 4))
+      });
+
+      // Q2: was X in the scene?
+      const present = unique[Math.floor(Math.random() * unique.length)];
+      const absent = ITEM_POOL.filter(e => !items.includes(e))[0];
+      qs.push({
+        q: "Which of these was in the scene?",
+        correct: present,
+        choices: shuffle([present, absent, ITEM_POOL.filter(e => !items.includes(e))[1] || '🦄', ITEM_POOL.filter(e => !items.includes(e))[2] || '🦔'])
+      });
+
+      // Q3: which was NOT in the scene?
+      const notIn = ITEM_POOL.filter(e => !items.includes(e));
+      const wasNotIn = notIn[Math.floor(Math.random() * notIn.length)];
+      const wereIn = pick(unique, 3);
+      qs.push({
+        q: "Which of these was NOT in the scene?",
+        correct: wasNotIn,
+        choices: shuffle([wasNotIn, ...wereIn])
+      });
+
+      return { items, questions: qs };
+    }
+
+    function startGame() {
+      score = 0; round = 0;
+      document.getElementById('setup').classList.add('hidden');
+      startRound();
+    }
+
+    function startRound() {
+      round++;
+      if (round > totalRounds) { endGame(); return; }
+      currentScene = generateScene();
+      renderScene();
+      document.getElementById('scene').classList.remove('hidden');
+      document.getElementById('quiz').classList.add('hidden');
+      document.getElementById('roundPill').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('roundPill2').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('scorePill').textContent = '⭐ ' + score;
+      runMemTimer(15);
+    }
+
+    function renderScene() {
+      const grid = document.getElementById('sceneGrid');
+      grid.innerHTML = '';
+      currentScene.items.forEach(it => {
+        const cell = document.createElement('div');
+        cell.className = 'scene-cell';
+        cell.textContent = it;
+        grid.appendChild(cell);
+      });
+    }
+
+    let memInterval = null;
+    function runMemTimer(secs) {
+      let t = secs;
+      document.getElementById('memTimer').textContent = '⏱ ' + t;
+      clearInterval(memInterval);
+      memInterval = setInterval(() => {
+        t--;
+        document.getElementById('memTimer').textContent = '⏱ ' + t;
+        if (t <= 0) {
+          clearInterval(memInterval);
+          startQuiz();
+        }
+      }, 1000);
+    }
+
+    function startQuiz() {
+      qIdx = 0;
+      document.getElementById('scene').classList.add('hidden');
+      document.getElementById('quiz').classList.remove('hidden');
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = currentScene.questions[qIdx];
+      document.getElementById('qNum').textContent = (qIdx + 1) + ' / ' + currentScene.questions.length;
+      document.getElementById('qText').textContent = q.q;
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      q.choices.forEach(opt => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.style.fontSize = '1.6rem';
+        b.style.textAlign = 'center';
+        b.style.padding = '1rem';
+        b.textContent = opt;
+        b.onclick = () => answer(b, opt);
+        ch.appendChild(b);
+      });
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    let answered = false;
+    function answer(btn, val) {
+      if (answered) return;
+      answered = true;
+      const q = currentScene.questions[qIdx];
+      const correct = val === q.correct || val == q.correct;
+      document.querySelectorAll('#choices .choice').forEach(b => {
+        b.style.pointerEvents = 'none';
+        if ((b.textContent === String(q.correct)) || b.textContent === q.correct) b.classList.add('correct');
+      });
+      if (!correct) btn.classList.add('wrong');
+      else score++;
+      document.getElementById('nextBtn').classList.remove('hidden');
+      document.getElementById('scorePill').textContent = '⭐ ' + score;
+    }
+
+    function nextQuestion() {
+      qIdx++;
+      answered = false;
+      if (qIdx >= currentScene.questions.length) {
+        startRound();
+      } else {
+        showQuestion();
+      }
+    }
+
+    function endGame() {
+      document.getElementById('scene').classList.add('hidden');
+      document.getElementById('quiz').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      const max = totalRounds * 3;
+      document.getElementById('finalScore').textContent = score + ' / ' + max;
+      let rank = "👍 Casual fan";
+      if (score >= max - 1) rank = "🧠 Photographic Memory!";
+      else if (score >= max * 0.8) rank = "🌟 Sharp eye";
+      else if (score >= max * 0.6) rank = "🎬 Solid";
+      else rank = "🥱 Need more sleep?";
+      document.getElementById('finalRank').textContent = rank;
+    }
+  </script>
+</body>
+</html>

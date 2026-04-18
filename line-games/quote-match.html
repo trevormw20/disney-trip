@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Quote Match — Disney</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">💬 Quote Match</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a Disney quote. Tap which character said it. 10 rounds — most correct wins. Pass the phone or play together.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 10</div>
+        <div class="stat-pill" id="scorePill">✅ 0</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">WHO SAID IT?</div>
+        <div class="prompt" id="quoteText" style="font-size:clamp(1.2rem, 4.8vw, 1.7rem); line-height:1.4; font-style:italic;">"..."</div>
+        <div class="sub" id="movieHint" style="margin-top:0.4rem; opacity:0.6;"></div>
+      </div>
+
+      <div id="choices"></div>
+      <button class="btn btn-ghost btn-block hidden" id="nextBtn" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORE</div>
+        <div class="prompt" id="finalScore">0 / 10</div>
+        <div class="sub" id="finalRank">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const QUOTES = [
+      {q:"Just keep swimming.", who:"Dory", from:"Finding Nemo", distractors:["Crush","Marlin","Nemo"]},
+      {q:"To infinity and beyond!", who:"Buzz Lightyear", from:"Toy Story", distractors:["Woody","Rex","Hamm"]},
+      {q:"Hakuna Matata.", who:"Timon & Pumbaa", from:"The Lion King", distractors:["Simba","Mufasa","Rafiki"]},
+      {q:"You're my favorite deputy.", who:"Woody", from:"Toy Story", distractors:["Buzz","Andy","Jessie"]},
+      {q:"Some people are worth melting for.", who:"Olaf", from:"Frozen", distractors:["Elsa","Anna","Kristoff"]},
+      {q:"Conceal, don't feel.", who:"Elsa", from:"Frozen", distractors:["Anna","Olaf","King Agnarr"]},
+      {q:"You shall not pass!... wait, wrong movie.", who:"Wreck-It Ralph (joking)", from:"Wreck-It Ralph", distractors:["Vanellope","Felix","King Candy"]},
+      {q:"Adventure is out there!", who:"Charles Muntz", from:"Up", distractors:["Carl","Russell","Dug"]},
+      {q:"I am Groot.", who:"Groot", from:"Guardians of the Galaxy", distractors:["Rocket","Star-Lord","Drax"]},
+      {q:"With great power comes great responsibility.", who:"Uncle Ben", from:"Spider-Man", distractors:["Peter Parker","Aunt May","Tony Stark"]},
+      {q:"I love you 3000.", who:"Morgan Stark", from:"Avengers: Endgame", distractors:["Tony Stark","Pepper","Happy"]},
+      {q:"You're a wizard, Harry... oh wait, that's Universal.", who:"Hagrid (joking)", from:"Harry Potter (Universal)", distractors:["Dumbledore","Snape","McGonagall"]},
+      {q:"The flame that burns twice as bright burns half as long. Just be a normal kid.", who:"Joe Gardner", from:"Soul", distractors:["22","Dorothea","Terry"]},
+      {q:"Fish are friends, not food!", who:"Bruce", from:"Finding Nemo", distractors:["Anchor","Chum","Nemo"]},
+      {q:"You can't control everything!", who:"Joy", from:"Inside Out", distractors:["Sadness","Anger","Anxiety"]},
+      {q:"Anyone can cook.", who:"Chef Gusteau", from:"Ratatouille", distractors:["Remy","Linguini","Anton Ego"]},
+      {q:"You will go to the Festival!", who:"Fairy Godmother", from:"Cinderella", distractors:["Cinderella","Anastasia","Drizella"]},
+      {q:"It's kind of fun to do the impossible.", who:"Walt Disney (often quoted)", from:"Walt Disney", distractors:["Mickey Mouse","Goofy","Donald Duck"]},
+      {q:"Open sesame... no wait, A whole new world!", who:"Aladdin", from:"Aladdin", distractors:["Genie","Jasmine","Sultan"]},
+      {q:"You think the only people who are people are the people who look and think like you.", who:"Pocahontas", from:"Pocahontas", distractors:["Nakoma","Grandmother Willow","John Smith"]},
+      {q:"Let it go!", who:"Elsa", from:"Frozen", distractors:["Anna","Olaf","Kristoff"]},
+      {q:"Be Our Guest!", who:"Lumiere", from:"Beauty and the Beast", distractors:["Cogsworth","Mrs. Potts","Belle"]},
+      {q:"You've got a friend in me.", who:"Woody (sung)", from:"Toy Story", distractors:["Buzz","Andy","Slinky"]},
+      {q:"Mirror mirror on the wall...", who:"The Evil Queen", from:"Snow White", distractors:["Snow White","Magic Mirror","Grumpy"]},
+      {q:"I'm late, I'm late, for a very important date!", who:"White Rabbit", from:"Alice in Wonderland", distractors:["Mad Hatter","Cheshire Cat","Alice"]},
+      {q:"You'll be in my heart.", who:"Kala", from:"Tarzan", distractors:["Tarzan","Jane","Kerchak"]},
+      {q:"How far I'll go!", who:"Moana", from:"Moana", distractors:["Maui","Tala","Tui"]},
+      {q:"Bibbidi-Bobbidi-Boo!", who:"Fairy Godmother", from:"Cinderella", distractors:["Cinderella","Stepmother","Anastasia"]},
+      {q:"Ohana means family. Family means nobody gets left behind or forgotten.", who:"Lilo", from:"Lilo & Stitch", distractors:["Stitch","Nani","David"]},
+      {q:"Don't tell me what I can't do!", who:"John Locke (oh wait, Lost)", from:"Lost (joking)", distractors:["Wreck-It Ralph","Vanellope","Felix"]},
+      {q:"All it takes is faith and trust... and a little bit of pixie dust.", who:"Peter Pan", from:"Peter Pan", distractors:["Tinker Bell","Wendy","Captain Hook"]},
+      {q:"The flower that blooms in adversity is the most rare and beautiful of all.", who:"The Emperor", from:"Mulan", distractors:["Mulan","Mushu","Shang"]},
+      {q:"You don't have time to be timid. You must be bold and daring.", who:"Lumiere", from:"Beauty and the Beast", distractors:["Belle","Beast","Cogsworth"]},
+      {q:"I'm only brave when I have to be.", who:"Mufasa", from:"The Lion King", distractors:["Simba","Scar","Rafiki"]},
+      {q:"Even miracles take a little time.", who:"Fairy Godmother", from:"Cinderella", distractors:["Cinderella","Mice","Stepmother"]},
+      {q:"Remember who you are.", who:"Mufasa", from:"The Lion King", distractors:["Simba","Scar","Rafiki"]},
+      {q:"To die would be a great adventure.", who:"Peter Pan", from:"Peter Pan", distractors:["Tinker Bell","Wendy","Captain Hook"]},
+      {q:"All you need is faith, trust, and a little pixie dust.", who:"Peter Pan", from:"Peter Pan", distractors:["Tinker Bell","Wendy","Mr. Smee"]},
+      {q:"The seaweed is always greener in somebody else's lake.", who:"Sebastian", from:"The Little Mermaid", distractors:["Ariel","Flounder","King Triton"]},
+      {q:"You control your destiny — you don't need magic to do it.", who:"Merida", from:"Brave", distractors:["Queen Elinor","King Fergus","Witch"]},
+      {q:"I am one with the Force, the Force is with me.", who:"Chirrut Îmwe", from:"Rogue One", distractors:["Jyn Erso","Cassian Andor","Baze Malbus"]},
+      {q:"Do or do not. There is no try.", who:"Yoda", from:"The Empire Strikes Back", distractors:["Obi-Wan","Luke","Han Solo"]},
+      {q:"I find your lack of faith disturbing.", who:"Darth Vader", from:"A New Hope", distractors:["Emperor","Tarkin","Stormtrooper"]},
+      {q:"This is the way.", who:"Mando", from:"The Mandalorian", distractors:["Grogu","Bo-Katan","IG-11"]},
+      {q:"I have the high ground!", who:"Obi-Wan Kenobi", from:"Revenge of the Sith", distractors:["Anakin","Yoda","Mace Windu"]}
+    ];
+
+    let queue = [], current = null, score = 0, round = 0, totalRounds = 10, answered = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(QUOTES).slice(0, totalRounds);
+      score = 0; round = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (round >= totalRounds || queue.length === 0) { endGame(); return; }
+      round++;
+      answered = false;
+      current = queue.pop();
+      document.getElementById('roundPill').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('scorePill').textContent = '✅ ' + score;
+      document.getElementById('quoteText').textContent = '"' + current.q + '"';
+      document.getElementById('movieHint').textContent = '';
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      const opts = shuffle([current.who, ...current.distractors]);
+      opts.forEach(name => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.textContent = name;
+        b.onclick = () => answer(b, name);
+        ch.appendChild(b);
+      });
+      document.getElementById('nextBtn').classList.add('hidden');
+    }
+
+    function answer(btn, name) {
+      if (answered) return;
+      answered = true;
+      const correct = name === current.who;
+      document.querySelectorAll('#choices .choice').forEach(b => {
+        b.style.pointerEvents = 'none';
+        if (b.textContent === current.who) b.classList.add('correct');
+      });
+      if (!correct) btn.classList.add('wrong');
+      else score++;
+      document.getElementById('movieHint').textContent = '— from ' + current.from;
+      document.getElementById('nextBtn').classList.remove('hidden');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' / ' + totalRounds;
+      let rank = "👍 Casual fan";
+      if (score >= 9) rank = "👑 Disney Quote Master!";
+      else if (score >= 7) rank = "🌟 Quote pro";
+      else if (score >= 5) rank = "🎬 Solid";
+      else if (score >= 3) rank = "📚 Time to rewatch";
+      document.getElementById('finalRank').textContent = rank;
+    }
+  </script>
+</body>
+</html>

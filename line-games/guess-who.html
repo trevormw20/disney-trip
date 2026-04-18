@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Disney Guess Who</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🕵️ Disney Guess Who</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone reveals one clue at a time about a Disney character. Tap "Guess" to pick from 4 options. Fewer clues used = more points. 5 rounds.
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 5</div>
+        <div class="stat-pill" id="scorePill">⭐ 0</div>
+      </div>
+
+      <div class="big-card" style="min-height:auto; padding:1.2rem 1rem;">
+        <div class="label">CLUES <span id="clueCount">1</span> / 5</div>
+        <div id="clueList" style="text-align:left; width:100%; margin:0.6rem 0;"></div>
+        <div class="sub" id="ptsHint" style="color:var(--gold); font-weight:700; margin-top:0.4rem;">Worth 30 pts</div>
+      </div>
+
+      <button class="btn btn-warn btn-lg btn-block" id="moreClueBtn" onclick="moreClue()">💡 Reveal Next Clue (-5 pts)</button>
+      <button class="btn btn-primary btn-lg btn-block" onclick="showGuess()" style="margin-top:0.6rem;">🎯 Guess Now</button>
+
+      <div id="guessBox" class="hidden" style="margin-top:0.7rem;">
+        <div style="font-size:0.85rem; color:var(--muted); text-align:center; margin-bottom:0.5rem;">Pick the character:</div>
+        <div id="choices"></div>
+      </div>
+
+      <div id="resultBox" class="hidden">
+        <div class="card" style="text-align:center; margin-top:0.7rem;">
+          <div style="font-size:1.3rem; font-weight:800;" id="resultLine">—</div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      </div>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORE</div>
+        <div class="prompt" id="finalScore">0 pts</div>
+        <div class="sub" id="finalRank">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    // Each character: 5 clues from vague to obvious
+    const CHARS = [
+      {name:"Mickey Mouse", clues:["I'm an animated icon.","I wear bright red shorts and big yellow shoes.","I have round black ears.","My best friend is a dog named Pluto.","I'm Disney's mascot since 1928."]},
+      {name:"Elsa", clues:["I have ice powers.","I'm royalty in Arendelle.","My sister is named Anna.","I sing about letting things go.","My signature song hit #1 in 2013."]},
+      {name:"Simba", clues:["I'm an African animal.","My father was killed by a relative.","I lived with a meerkat and warthog.","I sing 'I Just Can't Wait to Be King.'","My name means 'lion' in Swahili."]},
+      {name:"Buzz Lightyear", clues:["I'm a toy.","I have wings and a laser.","I'm a Space Ranger.","My catchphrase is 'To infinity and beyond!'","Woody is my best friend."]},
+      {name:"Ariel", clues:["I love the surface world.","I trade something for legs.","I'm a princess.","I'm 16 in my movie.","I'm a mermaid with red hair."]},
+      {name:"Olaf", clues:["I'm always smiling.","I love warm hugs.","I sing about summer.","I'm made of snow.","Elsa created me with her magic."]},
+      {name:"Stitch", clues:["I'm not from Earth.","I have 4 arms (sometimes).","I'm fluffy and blue.","I love Lilo.","Experiment 626 is my number."]},
+      {name:"Genie", clues:["I'm thousands of years old.","I grant wishes — three of them.","I live in a small space.","I'm voiced originally by Robin Williams.","I came from Aladdin's lamp."]},
+      {name:"Woody", clues:["I'm a cowboy.","I'm Andy's favorite toy.","I have a pull string.","Buzz Lightyear is my rival-turned-friend.","I'm a sheriff."]},
+      {name:"Belle", clues:["I love books.","I see beyond appearances.","My father is an inventor.","I dance with a Beast.","My yellow gown is iconic."]},
+      {name:"Moana", clues:["I love the ocean.","My grandmother believes in me.","I sail to save my people.","I team up with a demigod.","I'm from a Polynesian island."]},
+      {name:"Maui", clues:["I have many tattoos.","I shape-shift.","I have a magical hook.","I sing 'You're Welcome.'","I'm a demigod from the Pacific."]},
+      {name:"Sulley", clues:["I'm a top scarer at my company.","I have blue and purple fur.","Mike Wazowski is my best friend.","I bond with a tiny human girl.","Boo calls me 'Kitty.'"]},
+      {name:"Nemo", clues:["I have a 'lucky fin.'","My dad is overprotective.","I get captured.","I live in a coral reef.","I'm a clownfish."]},
+      {name:"Mulan", clues:["I disguise myself.","I save my country.","I have a tiny dragon companion.","I bring honor to my family.","I take my father's place in the army."]},
+      {name:"Rapunzel", clues:["I have very long hair.","I'm locked in a tower.","My hair has magical healing powers.","My pet chameleon is named Pascal.","I dream of seeing the floating lights."]},
+      {name:"Hercules", clues:["I'm super strong.","I'm a demigod.","Pegasus is my horse.","Hades is my enemy.","I become a true hero from zero."]},
+      {name:"Tiana", clues:["I dream of opening a restaurant.","I'm from New Orleans.","I get turned into a frog.","I work multiple jobs.","I'm Disney's first Black princess."]},
+      {name:"Peter Pan", clues:["I never grow up.","I lead a band of Lost Boys.","I have a fairy friend.","I battle a pirate captain.","I'm from Neverland."]},
+      {name:"Cinderella", clues:["I have a wicked stepmother.","Mice are my friends.","I lose a glass slipper.","My fairy godmother helps me.","I marry a prince."]},
+      {name:"Mr. Incredible", clues:["I'm super strong.","I have a wife with stretchy powers.","I work at an insurance company (in hiding).","My family is also super.","Frozone is my best friend."]},
+      {name:"Wall-E", clues:["I'm a robot.","I clean up trash on a deserted Earth.","I fall in love with another robot.","I have a pet cockroach.","I save humanity."]},
+      {name:"Carl Fredricksen", clues:["I'm an old widower.","I attach balloons to my house.","I travel with a young Wilderness Explorer.","My wife was named Ellie.","I want to fly to Paradise Falls."]},
+      {name:"Joy", clues:["I'm a personified emotion.","I'm yellow and shiny.","I work in someone's mind.","Sadness is my coworker.","I help control Riley's emotions."]},
+      {name:"Miguel", clues:["I love music despite my family's ban.","I travel to the Land of the Dead.","My great-great-grandfather is a famous musician.","Dante is my dog.","I'm from Mexico."]},
+      {name:"Vanellope", clues:["I'm a glitch.","I race in a candy-themed game.","Wreck-It Ralph is my best friend.","I'm a princess (of sorts).","I live in Sugar Rush."]},
+      {name:"Judy Hopps", clues:["I'm small but determined.","I work in law enforcement.","I partner with a sly fox.","I'm the first of my kind on the force.","I'm a rabbit officer in Zootopia."]},
+      {name:"Mirabel", clues:["I don't have a magical gift.","My family does.","Our magical house is my home.","I save the magic.","I wear glasses and a colorful skirt."]},
+      {name:"Yoda", clues:["I'm small but powerful.","I'm green and wise.","I speak in unusual word order.","I train Jedi.","I'm 900 years old."]},
+      {name:"Spider-Man", clues:["I got my powers from a spider bite.","I have a sense that warns me of danger.","My uncle taught me a famous lesson.","I live in New York.","I shoot webs."]},
+      {name:"Jack Sparrow", clues:["I'm a pirate captain.","I drink a lot of rum.","I have unique mannerisms.","My ship is the Black Pearl.","Captain is the title I insist on."]}
+    ];
+
+    let queue = [], current = null, ptsAvailable = 30, score = 0, round = 0, totalRounds = 5;
+    let cluesShown = 0;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(CHARS).slice(0, totalRounds);
+      score = 0; round = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (round >= totalRounds || queue.length === 0) { endGame(); return; }
+      round++;
+      current = queue.pop();
+      cluesShown = 1;
+      ptsAvailable = 30;
+      document.getElementById('roundPill').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('scorePill').textContent = '⭐ ' + score;
+      renderClues();
+      document.getElementById('moreClueBtn').classList.remove('hidden');
+      document.getElementById('moreClueBtn').disabled = false;
+      document.getElementById('guessBox').classList.add('hidden');
+      document.getElementById('resultBox').classList.add('hidden');
+    }
+
+    function renderClues() {
+      const list = document.getElementById('clueList');
+      list.innerHTML = '';
+      for (let i = 0; i < cluesShown; i++) {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#f0f4f8; padding:0.7rem 0.9rem; border-radius:10px; margin-bottom:0.5rem; color:#1e2a38; font-weight:600; line-height:1.3;';
+        div.textContent = (i+1) + '. ' + current.clues[i];
+        list.appendChild(div);
+      }
+      document.getElementById('clueCount').textContent = cluesShown;
+      document.getElementById('ptsHint').textContent = 'Worth ' + ptsAvailable + ' pts';
+      if (cluesShown >= 5) document.getElementById('moreClueBtn').disabled = true;
+    }
+
+    function moreClue() {
+      if (cluesShown >= 5) return;
+      cluesShown++;
+      ptsAvailable -= 5;
+      renderClues();
+    }
+
+    function showGuess() {
+      document.getElementById('guessBox').classList.remove('hidden');
+      const pool = CHARS.filter(c => c.name !== current.name);
+      const distractors = shuffle(pool).slice(0, 3).map(c => c.name);
+      const opts = shuffle([current.name, ...distractors]);
+      const ch = document.getElementById('choices');
+      ch.innerHTML = '';
+      opts.forEach(name => {
+        const b = document.createElement('button');
+        b.className = 'choice a';
+        b.textContent = name;
+        b.onclick = () => answer(b, name);
+        ch.appendChild(b);
+      });
+    }
+
+    function answer(btn, name) {
+      const correct = name === current.name;
+      document.querySelectorAll('#choices .choice').forEach(b => {
+        b.style.pointerEvents = 'none';
+        if (b.textContent === current.name) b.classList.add('correct');
+      });
+      if (!correct) btn.classList.add('wrong');
+      else score += ptsAvailable;
+      document.getElementById('moreClueBtn').classList.add('hidden');
+      document.getElementById('resultLine').innerHTML = correct
+        ? '✅ Correct! +' + ptsAvailable + ' pts'
+        : '❌ It was ' + current.name;
+      document.getElementById('resultLine').style.color = correct ? '#34d399' : '#f87171';
+      document.getElementById('resultBox').classList.remove('hidden');
+      document.getElementById('scorePill').textContent = '⭐ ' + score;
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' pts';
+      let rank = "👍 Casual fan";
+      if (score >= 130) rank = "🕵️ Detective Disney!";
+      else if (score >= 90) rank = "🌟 Sharp guesser";
+      else if (score >= 50) rank = "🎬 Pretty good";
+      else rank = "🤔 Need more clues next time";
+      document.getElementById('finalRank').textContent = rank;
+    }
+  </script>
+</body>
+</html>

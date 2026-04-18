@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Pixar vs Disney Animation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎬 Pixar vs Disney</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a movie title. Tap PIXAR or DISNEY (Walt Disney Animation). 15 rounds — most correct wins. Trickier than you think!
+        </p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 15</div>
+        <div class="stat-pill" id="scorePill">✅ 0</div>
+      </div>
+
+      <div class="big-card">
+        <div class="label">WHICH STUDIO?</div>
+        <div class="prompt" id="movieText" style="font-size:clamp(1.6rem, 6vw, 2.3rem);">Movie</div>
+        <div class="sub" id="yearText" style="margin-top:0.4rem; opacity:0.7;"></div>
+      </div>
+
+      <div id="guessBtns" class="btn-row">
+        <button class="btn btn-primary btn-lg" onclick="guess('disney')">🏰 Disney</button>
+        <button class="btn btn-success btn-lg" onclick="guess('pixar')">🚀 Pixar</button>
+      </div>
+
+      <div id="resultBox" class="hidden">
+        <div class="card" style="text-align:center; margin-top:0.7rem;">
+          <div style="font-size:1.4rem; font-weight:800;" id="resultLine">—</div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      </div>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORE</div>
+        <div class="prompt" id="finalScore">0 / 15</div>
+        <div class="sub" id="finalRank">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const MOVIES = [
+      // Pixar
+      {name:"Toy Story", year:1995, studio:"pixar"},
+      {name:"A Bug's Life", year:1998, studio:"pixar"},
+      {name:"Toy Story 2", year:1999, studio:"pixar"},
+      {name:"Monsters, Inc.", year:2001, studio:"pixar"},
+      {name:"Finding Nemo", year:2003, studio:"pixar"},
+      {name:"The Incredibles", year:2004, studio:"pixar"},
+      {name:"Cars", year:2006, studio:"pixar"},
+      {name:"Ratatouille", year:2007, studio:"pixar"},
+      {name:"WALL-E", year:2008, studio:"pixar"},
+      {name:"Up", year:2009, studio:"pixar"},
+      {name:"Toy Story 3", year:2010, studio:"pixar"},
+      {name:"Brave", year:2012, studio:"pixar"},
+      {name:"Monsters University", year:2013, studio:"pixar"},
+      {name:"Inside Out", year:2015, studio:"pixar"},
+      {name:"The Good Dinosaur", year:2015, studio:"pixar"},
+      {name:"Finding Dory", year:2016, studio:"pixar"},
+      {name:"Coco", year:2017, studio:"pixar"},
+      {name:"Incredibles 2", year:2018, studio:"pixar"},
+      {name:"Toy Story 4", year:2019, studio:"pixar"},
+      {name:"Onward", year:2020, studio:"pixar"},
+      {name:"Soul", year:2020, studio:"pixar"},
+      {name:"Luca", year:2021, studio:"pixar"},
+      {name:"Turning Red", year:2022, studio:"pixar"},
+      {name:"Lightyear", year:2022, studio:"pixar"},
+      {name:"Elemental", year:2023, studio:"pixar"},
+      {name:"Inside Out 2", year:2024, studio:"pixar"},
+      // Disney Animation
+      {name:"Snow White and the Seven Dwarfs", year:1937, studio:"disney"},
+      {name:"Pinocchio", year:1940, studio:"disney"},
+      {name:"Bambi", year:1942, studio:"disney"},
+      {name:"Cinderella", year:1950, studio:"disney"},
+      {name:"Alice in Wonderland", year:1951, studio:"disney"},
+      {name:"Peter Pan", year:1953, studio:"disney"},
+      {name:"Lady and the Tramp", year:1955, studio:"disney"},
+      {name:"Sleeping Beauty", year:1959, studio:"disney"},
+      {name:"101 Dalmatians", year:1961, studio:"disney"},
+      {name:"The Sword in the Stone", year:1963, studio:"disney"},
+      {name:"The Jungle Book", year:1967, studio:"disney"},
+      {name:"The Aristocats", year:1970, studio:"disney"},
+      {name:"Robin Hood", year:1973, studio:"disney"},
+      {name:"The Little Mermaid", year:1989, studio:"disney"},
+      {name:"Beauty and the Beast", year:1991, studio:"disney"},
+      {name:"Aladdin", year:1992, studio:"disney"},
+      {name:"The Lion King", year:1994, studio:"disney"},
+      {name:"Pocahontas", year:1995, studio:"disney"},
+      {name:"The Hunchback of Notre Dame", year:1996, studio:"disney"},
+      {name:"Hercules", year:1997, studio:"disney"},
+      {name:"Mulan", year:1998, studio:"disney"},
+      {name:"Tarzan", year:1999, studio:"disney"},
+      {name:"The Emperor's New Groove", year:2000, studio:"disney"},
+      {name:"Atlantis: The Lost Empire", year:2001, studio:"disney"},
+      {name:"Lilo & Stitch", year:2002, studio:"disney"},
+      {name:"Treasure Planet", year:2002, studio:"disney"},
+      {name:"Brother Bear", year:2003, studio:"disney"},
+      {name:"Chicken Little", year:2005, studio:"disney"},
+      {name:"Meet the Robinsons", year:2007, studio:"disney"},
+      {name:"Bolt", year:2008, studio:"disney"},
+      {name:"The Princess and the Frog", year:2009, studio:"disney"},
+      {name:"Tangled", year:2010, studio:"disney"},
+      {name:"Wreck-It Ralph", year:2012, studio:"disney"},
+      {name:"Frozen", year:2013, studio:"disney"},
+      {name:"Big Hero 6", year:2014, studio:"disney"},
+      {name:"Zootopia", year:2016, studio:"disney"},
+      {name:"Moana", year:2016, studio:"disney"},
+      {name:"Ralph Breaks the Internet", year:2018, studio:"disney"},
+      {name:"Frozen 2", year:2019, studio:"disney"},
+      {name:"Raya and the Last Dragon", year:2021, studio:"disney"},
+      {name:"Encanto", year:2021, studio:"disney"},
+      {name:"Strange World", year:2022, studio:"disney"},
+      {name:"Wish", year:2023, studio:"disney"}
+    ];
+
+    let queue = [], current = null, score = 0, round = 0, totalRounds = 15, answered = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame() {
+      queue = shuffle(MOVIES).slice(0, totalRounds);
+      score = 0; round = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      next();
+    }
+
+    function next() {
+      if (round >= totalRounds || queue.length === 0) { endGame(); return; }
+      round++;
+      answered = false;
+      current = queue.pop();
+      document.getElementById('roundPill').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('scorePill').textContent = '✅ ' + score;
+      document.getElementById('movieText').textContent = current.name;
+      document.getElementById('yearText').textContent = '';
+      document.getElementById('guessBtns').classList.remove('hidden');
+      document.getElementById('resultBox').classList.add('hidden');
+    }
+
+    function guess(studio) {
+      if (answered) return;
+      answered = true;
+      const correct = studio === current.studio;
+      if (correct) score++;
+      document.getElementById('yearText').textContent = '(' + current.year + ')';
+      const correctName = current.studio === 'pixar' ? '🚀 Pixar' : '🏰 Disney Animation';
+      document.getElementById('resultLine').innerHTML = correct
+        ? '✅ Correct! It\'s ' + correctName
+        : '❌ Wrong — it\'s ' + correctName;
+      document.getElementById('resultLine').style.color = correct ? '#34d399' : '#f87171';
+      document.getElementById('guessBtns').classList.add('hidden');
+      document.getElementById('resultBox').classList.remove('hidden');
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' / ' + totalRounds;
+      let rank = "👍 Casual fan";
+      if (score >= 14) rank = "👑 Studio Insider!";
+      else if (score >= 11) rank = "🌟 Animation pro";
+      else if (score >= 8) rank = "🎬 Above average";
+      else if (score >= 5) rank = "🍿 Time to study";
+      document.getElementById('finalRank').textContent = rank;
+    }
+  </script>
+</body>
+</html>

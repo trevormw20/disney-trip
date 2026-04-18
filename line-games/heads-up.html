@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     body.playing { background: #1e3a8a; }
+    .subcat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+    .subcat-row .btn { padding: 0.7rem 0.5rem; font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -18,7 +20,6 @@
       <div style="width:64px;"></div>
     </div>
 
-    <!-- Setup -->
     <section id="setup" class="section">
       <div class="card">
         <h2 style="margin-bottom:0.6rem;">How to Play</h2>
@@ -26,29 +27,34 @@
           Hold the phone on your forehead, screen facing the group. They give clues. <br><br>
           <strong>Tilt phone DOWN (toward chin)</strong> = ✅ Correct<br>
           <strong>Tilt phone UP (toward forehead)</strong> = ⏭ Pass<br><br>
-          No tilt? Tap the top half (✅) or bottom half (⏭) of the screen instead.
+          No tilt? Tap the top half (✅) or bottom half (⏭) of the screen.<br>
+          <em style="color:var(--gold);">⚠ No way to stop once started — wait for the timer.</em>
         </p>
       </div>
 
-      <h3 style="margin:1.5rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Category</h3>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
-        <button class="btn btn-primary" onclick="startCat('characters')">🧑‍🎤 Characters</button>
-        <button class="btn btn-success" onclick="startCat('movies')">🎬 Movies</button>
-        <button class="btn btn-warn" onclick="startCat('songs')">🎵 Songs</button>
-        <button class="btn" onclick="startCat('all')">🎲 Everything</button>
+      <h3 style="margin:1.5rem 0 0.4rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Step 1 — Pick a Category</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+        <button class="btn btn-primary" onclick="pickCat('characters')">🧑‍🎤 Characters</button>
+        <button class="btn btn-success" onclick="pickCat('movies')">🎬 Movies</button>
+        <button class="btn btn-warn" onclick="pickCat('songs')">🎵 Songs</button>
       </div>
 
-      <div style="margin-top:1.2rem;">
+      <div id="subcatBox" class="hidden" style="margin-top:1rem;">
+        <h3 style="margin:0 0 0.4rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Step 2 — Pick a Sub-Category</h3>
+        <div id="subcatRow" class="subcat-row"></div>
+      </div>
+
+      <div id="timeBox" class="hidden" style="margin-top:1.2rem;">
         <label class="lbl">Round length</label>
         <div style="display:flex; gap:0.5rem;">
           <button class="btn btn-ghost" onclick="setTime(60)" id="t60">60s</button>
           <button class="btn btn-ghost" onclick="setTime(90)" id="t90">90s</button>
           <button class="btn btn-ghost" onclick="setTime(120)" id="t120">120s</button>
         </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="startRoundFlow()" style="margin-top:1rem;">▶ Start Round</button>
       </div>
     </section>
 
-    <!-- End -->
     <section id="end" class="section hidden">
       <div class="big-card">
         <div class="label">TIME'S UP!</div>
@@ -62,7 +68,6 @@
     </section>
   </main>
 
-  <!-- Fullscreen play overlay -->
   <div id="play" class="fullscreen-prompt normal hidden">
     <div class="fs-timer" id="fsTimer">60</div>
     <div id="fsText" style="padding:0 1rem;">Ready?</div>
@@ -71,46 +76,121 @@
 
   <script>
     const DATA = {
-      characters: ["Mickey Mouse","Elsa","Simba","Ariel","Belle","Aladdin","Woody","Buzz Lightyear","Stitch","Moana","Maui","Olaf","Donald Duck","Goofy","Pluto","Minnie Mouse","Anna","Mufasa","Timon","Pumbaa","Genie","Jasmine","Beast","Lumiere","Sebastian","Flounder","Ursula","Jafar","Sulley","Mike Wazowski","Boo","Nemo","Marlin","Dory","Crush","Mr. Incredible","Elastigirl","Edna Mode","Wall-E","Remy","Carl Fredricksen","Russell","Dug","Joy","Sadness","Anger","Miguel","Tiana","Naveen","Rapunzel","Flynn Rider","Pascal","Mulan","Mushu","Hercules","Hades","Megara","Peter Pan","Tinker Bell","Captain Hook","Snow White","Cinderella","Aurora","Maleficent","Pinocchio","Jiminy Cricket","Alice","Cheshire Cat","Mad Hatter","Mowgli","Baloo","Pooh","Tigger","Piglet","Eeyore","Robin Hood","Merida","Vanellope","Wreck-It Ralph","Judy Hopps","Nick Wilde","Mirabel","Bruno","Pocahontas","Jack Skellington","Mary Poppins","Kermit the Frog","Yoda","Chewbacca","BB-8","Spider-Man","Iron Man","Groot"],
-      movies: ["Frozen","The Lion King","The Little Mermaid","Beauty and the Beast","Aladdin","Toy Story","Lilo and Stitch","Moana","Monsters Inc","Finding Nemo","The Incredibles","Wall-E","Ratatouille","Up","Inside Out","Coco","The Princess and the Frog","Mulan","Tangled","Hercules","Sleeping Beauty","Snow White","Cinderella","Peter Pan","Pinocchio","The Jungle Book","Winnie the Pooh","Wreck-It Ralph","Big Hero 6","Zootopia","Encanto","Raya and the Last Dragon","Luca","Turning Red","Onward","Soul","Pirates of the Caribbean","Mary Poppins","Cars","Brave","The Nightmare Before Christmas","Star Wars","The Avengers","Pocahontas","Bambi","101 Dalmatians","Frozen 2","Toy Story 2","Toy Story 3","Toy Story 4","Finding Dory","Cars 2","Cars 3","Spider-Man","Tarzan","Atlantis","The Aristocats"],
-      songs: ["Let It Go","Hakuna Matata","Under the Sea","Be Our Guest","A Whole New World","You've Got a Friend in Me","I'll Make a Man Out of You","Circle of Life","Part of Your World","Friend Like Me","Beauty and the Beast","When You Wish Upon a Star","Bibbidi-Bobbidi-Boo","How Far I'll Go","You're Welcome","We Don't Talk About Bruno","Surface Pressure","Into the Unknown","Do You Want to Build a Snowman","For the First Time in Forever","Try Everything","Remember Me","Reflection","I See the Light","I Won't Say I'm in Love","Go the Distance","Almost There","Touch the Sky","Some Day My Prince Will Come","A Dream is a Wish Your Heart Makes","Heigh-Ho","Whistle While You Work","Following the Leader","You Can Fly","I Just Can't Wait to Be King","Can You Feel the Love Tonight","Colors of the Wind","Just Around the Riverbend","Speechless","One Jump Ahead","Prince Ali"]
+      characters: {
+        disney: ["Mickey Mouse","Minnie Mouse","Donald Duck","Daisy Duck","Goofy","Pluto","Elsa","Anna","Olaf","Kristoff","Sven","Simba","Mufasa","Timon","Pumbaa","Nala","Scar","Ariel","Sebastian","Flounder","Ursula","King Triton","Belle","Beast","Lumiere","Mrs. Potts","Aladdin","Jasmine","Genie","Abu","Jafar","Iago","Stitch","Lilo","Moana","Maui","Heihei","Tiana","Naveen","Rapunzel","Flynn Rider","Pascal","Maximus","Mulan","Mushu","Hercules","Megara","Hades","Peter Pan","Tinker Bell","Captain Hook","Wendy","Snow White","Cinderella","Aurora","Maleficent","Pinocchio","Jiminy Cricket","Alice","Cheshire Cat","Mad Hatter","Mowgli","Baloo","Pooh","Tigger","Piglet","Eeyore","Robin Hood","Merida","Mirabel","Bruno","Isabela","Pocahontas","Tarzan","Jane","Hiro Hamada","Baymax","Judy Hopps","Nick Wilde","Vanellope","Wreck-It Ralph"],
+        pixar: ["Woody","Buzz Lightyear","Jessie","Rex","Hamm","Slinky Dog","Bullseye","Forky","Mr. Potato Head","Sulley","Mike Wazowski","Boo","Randall","Nemo","Marlin","Dory","Crush","Bruce","Gill","Mr. Incredible","Elastigirl","Dash","Violet","Jack-Jack","Frozone","Edna Mode","Wall-E","EVE","Remy","Linguini","Carl Fredricksen","Russell","Dug","Kevin","Joy","Sadness","Fear","Anger","Disgust","Bing Bong","Anxiety","Miguel","Hector","Dante","Ember","Wade","Lightning McQueen","Mater","Sally"],
+        marvel: ["Iron Man","Spider-Man","Captain America","Thor","Hulk","Black Widow","Hawkeye","Black Panther","Doctor Strange","Captain Marvel","Ant-Man","Wasp","Star-Lord","Gamora","Rocket Raccoon","Groot","Drax","Mantis","Scarlet Witch","Vision","Falcon","Bucky Barnes","Nick Fury","Loki","Thanos","Wanda Maximoff","Shang-Chi","Moon Knight","Ms. Marvel","She-Hulk"],
+        starwars: ["Luke Skywalker","Leia","Han Solo","Chewbacca","Yoda","Obi-Wan Kenobi","Darth Vader","R2-D2","C-3PO","Darth Maul","Padme Amidala","Anakin Skywalker","Rey","Finn","Poe Dameron","Kylo Ren","BB-8","Snoke","Mace Windu","Qui-Gon Jinn","Boba Fett","Jango Fett","Mando","Grogu","Ahsoka Tano","Cad Bane","Lando Calrissian","Jabba the Hutt"]
+      },
+      movies: {
+        disney: ["Frozen","Frozen 2","The Lion King","The Little Mermaid","Beauty and the Beast","Aladdin","Lilo and Stitch","Moana","Mulan","Tangled","Hercules","Sleeping Beauty","Snow White","Cinderella","Peter Pan","Pinocchio","Bambi","101 Dalmatians","The Aristocats","The Jungle Book","Robin Hood","Winnie the Pooh","Wreck-It Ralph","Big Hero 6","Zootopia","Encanto","Raya and the Last Dragon","The Princess and the Frog","Pocahontas","Brave","Tarzan","Atlantis","Bolt","Treasure Planet","The Hunchback of Notre Dame","The Emperor's New Groove","Meet the Robinsons","Wish"],
+        pixar: ["Toy Story","Toy Story 2","Toy Story 3","Toy Story 4","Monsters Inc","Monsters University","Finding Nemo","Finding Dory","The Incredibles","Incredibles 2","Wall-E","Ratatouille","Up","Inside Out","Inside Out 2","Coco","Soul","Onward","Luca","Turning Red","Lightyear","Elemental","Cars","Cars 2","Cars 3","A Bug's Life","Brave"],
+        marvel: ["Iron Man","The Avengers","Avengers: Endgame","Avengers: Infinity War","Black Panther","Spider-Man: No Way Home","Captain America: Civil War","Thor: Ragnarok","Doctor Strange","Captain Marvel","Guardians of the Galaxy","Ant-Man","Black Widow","Shang-Chi","Eternals","WandaVision","Loki","She-Hulk","Moon Knight","Ms. Marvel"],
+        starwars: ["A New Hope","The Empire Strikes Back","Return of the Jedi","The Phantom Menace","Attack of the Clones","Revenge of the Sith","The Force Awakens","The Last Jedi","The Rise of Skywalker","Rogue One","Solo","The Mandalorian","Andor","Ahsoka","The Clone Wars","Rebels"],
+        liveaction: ["Pirates of the Caribbean","Mary Poppins","The Parent Trap","National Treasure","The Princess Diaries","Enchanted","Hocus Pocus","Maleficent","Cruella","The Lion King (2019)","Beauty and the Beast (2017)","Aladdin (2019)","Mulan (2020)","Cinderella (2015)","Pete's Dragon","Christopher Robin"]
+      },
+      songs: {
+        classic: ["When You Wish Upon a Star","Bibbidi-Bobbidi-Boo","A Dream is a Wish","Heigh-Ho","Whistle While You Work","Some Day My Prince Will Come","You Can Fly","Following the Leader","Bare Necessities","I Wanna Be Like You","Cruella De Vil","Beauty and the Beast","Be Our Guest","Part of Your World","Under the Sea","Kiss the Girl","A Whole New World","Friend Like Me","Prince Ali","One Jump Ahead","Colors of the Wind","Just Around the Riverbend","Reflection","I'll Make a Man Out of You","Go the Distance","I Won't Say I'm in Love"],
+        modern: ["Let It Go","Into the Unknown","Do You Want to Build a Snowman","For the First Time in Forever","Show Yourself","How Far I'll Go","You're Welcome","Shiny","We Don't Talk About Bruno","Surface Pressure","Waiting on a Miracle","All of You","Almost There","Friends on the Other Side","I See the Light","When Will My Life Begin","I've Got a Dream","Try Everything"],
+        pixar: ["You've Got a Friend in Me","I Will Go Sailing No More","When She Loved Me","We Belong Together","Married Life","Remember Me","Un Poco Loco","The World Es Mi Familia","Lava"]
+      }
     };
 
     let queue = [], current = null, score = 0, passes = 0, history = [];
     let roundLength = 60, timer = null, remaining = 0;
-    let canFlip = true; // debounce tilt
+    let canFlip = true;
     let orientationListener = null;
+    let pickedCat = '';
+    let pickedSub = '';
 
     function setTime(s) {
       roundLength = s;
-      ['t60','t90','t120'].forEach(id => document.getElementById(id).style.background = 'transparent');
-      document.getElementById('t' + s).style.background = 'var(--gold)';
-      document.getElementById('t' + s).style.color = '#1e2a38';
+      ['t60','t90','t120'].forEach(id => { const el=document.getElementById(id); el.style.background='transparent'; el.style.color='white'; });
+      const cur = document.getElementById('t' + s);
+      cur.style.background = 'var(--gold)'; cur.style.color = '#1e2a38';
     }
     setTime(60);
 
     function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
-    function startCat(cat) {
-      let pool = cat === 'all' ? DATA.characters.concat(DATA.movies, DATA.songs) : DATA[cat];
+    const SUBCAT_LABELS = {
+      disney: '🏰 Disney',
+      pixar: '🚀 Pixar',
+      marvel: '🦸 Marvel',
+      starwars: '⭐ Star Wars',
+      liveaction: '🎬 Live Action',
+      classic: '👑 Classic',
+      modern: '✨ Modern',
+      all: '🎲 All'
+    };
+
+    function pickCat(cat) {
+      pickedCat = cat;
+      pickedSub = '';
+      const subs = Object.keys(DATA[cat]);
+      const row = document.getElementById('subcatRow');
+      row.innerHTML = '';
+      subs.forEach(s => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-ghost';
+        b.textContent = SUBCAT_LABELS[s] || s;
+        b.onclick = () => pickSub(s);
+        row.appendChild(b);
+      });
+      const all = document.createElement('button');
+      all.className = 'btn btn-ghost';
+      all.textContent = SUBCAT_LABELS.all;
+      all.onclick = () => pickSub('all');
+      row.appendChild(all);
+      document.getElementById('subcatBox').classList.remove('hidden');
+      document.getElementById('timeBox').classList.add('hidden');
+    }
+
+    function pickSub(sub) {
+      pickedSub = sub;
+      // highlight chosen subcat
+      document.querySelectorAll('#subcatRow .btn').forEach(b => { b.style.background='transparent'; b.style.color='white'; });
+      const buttons = document.querySelectorAll('#subcatRow .btn');
+      const subs = Object.keys(DATA[pickedCat]).concat(['all']);
+      buttons[subs.indexOf(sub)].style.background = 'var(--gold)';
+      buttons[subs.indexOf(sub)].style.color = '#1e2a38';
+      document.getElementById('timeBox').classList.remove('hidden');
+    }
+
+    function startRoundFlow() {
+      let pool = [];
+      if (pickedSub === 'all') {
+        Object.values(DATA[pickedCat]).forEach(arr => pool = pool.concat(arr));
+      } else {
+        pool = DATA[pickedCat][pickedSub];
+      }
       queue = shuffle(pool);
       score = 0; passes = 0; history = [];
       document.getElementById('mainContent').classList.add('hidden');
       const play = document.getElementById('play');
       play.classList.remove('hidden');
       document.body.classList.add('playing');
-
-      // try to lock landscape via fullscreen
       tryFullscreen();
-      // request motion permission on iOS
       requestMotionPermission();
-
+      lockExit();
       countdown(3);
     }
 
     function tryFullscreen() {
       const el = document.documentElement;
       if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    }
+
+    function lockExit() {
+      window.addEventListener('beforeunload', preventExit);
+    }
+    function unlockExit() {
+      window.removeEventListener('beforeunload', preventExit);
+    }
+    function preventExit(e) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
     }
 
     function requestMotionPermission() {
@@ -125,54 +205,34 @@
 
     function attachOrientation() {
       orientationListener = (e) => {
-        if (!canFlip) return;
-        // beta = front-to-back tilt (-180 to 180)
-        // When phone is held to forehead screen-out: roughly beta ~ -90 (top edge points up)
-        // Tilt down (chin) -> beta moves toward 0 (less negative)
-        // Tilt up (forehead) -> beta moves more negative
-        if (e.beta == null) return;
-        if (e.beta > -45 && e.beta < 45) {
-          // chin tilt
-          markCorrect();
-        } else if (e.beta < -135 || e.beta > 135) {
-          markPass();
-        }
+        if (!canFlip || e.beta == null) return;
+        if (e.beta > -45 && e.beta < 45) markCorrect();
+        else if (e.beta < -135 || e.beta > 135) markPass();
       };
       window.addEventListener('deviceorientation', orientationListener);
     }
-
-    function detachOrientation() {
-      if (orientationListener) window.removeEventListener('deviceorientation', orientationListener);
-    }
-
-    function debounceFlip() {
-      canFlip = false;
-      setTimeout(() => { canFlip = true; }, 1200);
-    }
+    function detachOrientation() { if (orientationListener) window.removeEventListener('deviceorientation', orientationListener); }
+    function debounceFlip() { canFlip = false; setTimeout(() => { canFlip = true; }, 1200); }
 
     function countdown(n) {
       const fsText = document.getElementById('fsText');
       const fsHint = document.getElementById('fsHint');
       fsText.textContent = n;
       fsHint.textContent = 'Get ready!';
-      if (n === 0) {
-        startRound();
-        return;
-      }
+      if (n === 0) { startRound(); return; }
       setTimeout(() => countdown(n - 1), 800);
     }
 
     function startRound() {
       remaining = roundLength;
       document.getElementById('fsTimer').textContent = remaining;
-      document.getElementById('fsHint').textContent = 'Tilt DOWN ✅  •  Tilt UP ⏭  •  Or tap screen halves';
+      document.getElementById('fsHint').textContent = 'Tilt DOWN ✅  •  Tilt UP ⏭  •  Or tap halves';
       next();
       timer = setInterval(() => {
         remaining--;
         document.getElementById('fsTimer').textContent = remaining;
         if (remaining <= 0) endRound();
       }, 1000);
-      // Tap zones — top half = correct, bottom = pass
       document.getElementById('play').addEventListener('click', tapHandler);
     }
 
@@ -182,10 +242,7 @@
     }
 
     function next() {
-      if (queue.length === 0) {
-        document.getElementById('fsText').textContent = "No more!";
-        return;
-      }
+      if (queue.length === 0) { document.getElementById('fsText').textContent = "No more!"; return; }
       current = queue.pop();
       document.getElementById('fsText').textContent = current;
       flashColor('normal');
@@ -215,7 +272,8 @@
     function endRound() {
       clearInterval(timer);
       detachOrientation();
-      document.removeEventListener('click', tapHandler);
+      unlockExit();
+      document.getElementById('play').removeEventListener('click', tapHandler);
       if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
       document.body.classList.remove('playing');
       document.getElementById('play').classList.add('hidden');

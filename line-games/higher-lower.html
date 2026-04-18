@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Higher or Lower — Disney</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">📊 Higher or Lower</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone shows a Disney fact and number. Group decides together if the next item is HIGHER or LOWER. One person taps. 10 rounds — most correct wins!
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Topic</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
+        <button class="btn btn-primary" onclick="startGame('movieYears')">📅 Movie Release Years</button>
+        <button class="btn btn-success" onclick="startGame('boxOffice')">💰 Movie Box Office ($M)</button>
+        <button class="btn btn-warn" onclick="startGame('rideYears')">🎢 Ride Opening Years</button>
+        <button class="btn" onclick="startGame('rideHeights')">📏 Ride Drop Heights (ft)</button>
+        <button class="btn btn-primary" onclick="startGame('rideLengths')">⏱ Ride Length (sec)</button>
+        <button class="btn btn-success" onclick="startGame('parkSize')">🌳 Park Size (acres)</button>
+      </div>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="stat-row">
+        <div class="stat-pill" id="roundPill">Round 1 / 10</div>
+        <div class="stat-pill" id="scorePill">✅ 0</div>
+      </div>
+
+      <div class="big-card" style="min-height:auto; padding:1.5rem 1rem;">
+        <div class="label" id="topicLabel">TOPIC</div>
+        <div style="font-size:3.5rem;" id="leftEmoji">🎬</div>
+        <div class="prompt" id="leftName" style="font-size:clamp(1.2rem, 4.5vw, 1.6rem); margin:0.3rem 0;">Item</div>
+        <div style="font-size:2.4rem; font-weight:800; color:var(--gold);" id="leftValue">—</div>
+        <div class="sub" style="margin-top:0.4rem; font-weight:700; color:var(--gold);">VS</div>
+        <div style="font-size:3.5rem; margin-top:0.3rem;" id="rightEmoji">❓</div>
+        <div class="prompt" id="rightName" style="font-size:clamp(1.2rem, 4.5vw, 1.6rem); margin:0.3rem 0;">Mystery item</div>
+        <div style="font-size:2.4rem; font-weight:800; color:var(--gold);" id="rightValue">?</div>
+      </div>
+
+      <div id="guessBtns" class="btn-row">
+        <button class="btn btn-danger btn-lg" onclick="guess('lower')">⬇ Lower</button>
+        <button class="btn btn-success btn-lg" onclick="guess('higher')">⬆ Higher</button>
+      </div>
+
+      <div id="resultBox" class="hidden">
+        <div class="card" style="text-align:center; margin-top:0.7rem;">
+          <div style="font-size:1.4rem; font-weight:800;" id="resultLine">—</div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="next()" style="margin-top:0.7rem;">Next →</button>
+      </div>
+    </section>
+
+    <section id="end" class="section hidden">
+      <div class="big-card">
+        <div class="label">FINAL SCORE</div>
+        <div class="prompt" id="finalScore">0 / 10</div>
+        <div class="sub" id="finalRank">—</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="location.reload()">🔁 Play Again</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    // Each fact: {name, emoji, value}
+    const TOPICS = {
+      movieYears: {
+        label: "Movie Released In", unit: "", emoji: "📅",
+        items: [
+          {name:"Snow White and the Seven Dwarfs", emoji:"🍎", value:1937},
+          {name:"Pinocchio", emoji:"🪵", value:1940},
+          {name:"Bambi", emoji:"🦌", value:1942},
+          {name:"Cinderella", emoji:"👠", value:1950},
+          {name:"Peter Pan", emoji:"🧚", value:1953},
+          {name:"Lady and the Tramp", emoji:"🐶", value:1955},
+          {name:"Sleeping Beauty", emoji:"😴", value:1959},
+          {name:"101 Dalmatians", emoji:"🐶", value:1961},
+          {name:"The Sword in the Stone", emoji:"⚔️", value:1963},
+          {name:"Mary Poppins", emoji:"☂️", value:1964},
+          {name:"The Jungle Book", emoji:"🐯", value:1967},
+          {name:"The Aristocats", emoji:"🐱", value:1970},
+          {name:"Robin Hood", emoji:"🏹", value:1973},
+          {name:"The Little Mermaid", emoji:"🧜‍♀️", value:1989},
+          {name:"Beauty and the Beast", emoji:"🌹", value:1991},
+          {name:"Aladdin", emoji:"🪔", value:1992},
+          {name:"The Lion King", emoji:"🦁", value:1994},
+          {name:"Toy Story", emoji:"🤠", value:1995},
+          {name:"Pocahontas", emoji:"🪶", value:1995},
+          {name:"Hercules", emoji:"💪", value:1997},
+          {name:"Mulan", emoji:"⚔️", value:1998},
+          {name:"Tarzan", emoji:"🌴", value:1999},
+          {name:"Monsters Inc", emoji:"👹", value:2001},
+          {name:"Finding Nemo", emoji:"🐠", value:2003},
+          {name:"The Incredibles", emoji:"🦸", value:2004},
+          {name:"Cars", emoji:"🚗", value:2006},
+          {name:"Ratatouille", emoji:"🐀", value:2007},
+          {name:"Wall-E", emoji:"🤖", value:2008},
+          {name:"Up", emoji:"🎈", value:2009},
+          {name:"The Princess and the Frog", emoji:"🐸", value:2009},
+          {name:"Tangled", emoji:"💇‍♀️", value:2010},
+          {name:"Brave", emoji:"🏹", value:2012},
+          {name:"Frozen", emoji:"❄️", value:2013},
+          {name:"Big Hero 6", emoji:"🤖", value:2014},
+          {name:"Inside Out", emoji:"🧠", value:2015},
+          {name:"Zootopia", emoji:"🐰", value:2016},
+          {name:"Moana", emoji:"🌊", value:2016},
+          {name:"Coco", emoji:"💀", value:2017},
+          {name:"Frozen 2", emoji:"❄️", value:2019},
+          {name:"Soul", emoji:"🎷", value:2020},
+          {name:"Encanto", emoji:"🏠", value:2021},
+          {name:"Turning Red", emoji:"🐼", value:2022},
+          {name:"Lightyear", emoji:"🚀", value:2022},
+          {name:"Elemental", emoji:"🔥", value:2023},
+          {name:"Wish", emoji:"⭐", value:2023},
+          {name:"Inside Out 2", emoji:"🧠", value:2024}
+        ]
+      },
+      boxOffice: {
+        label: "Worldwide Box Office", unit: "$M", emoji: "💰",
+        items: [
+          {name:"Snow White (1937)", emoji:"🍎", value:418},
+          {name:"The Lion King (1994)", emoji:"🦁", value:968},
+          {name:"Frozen (2013)", emoji:"❄️", value:1290},
+          {name:"Frozen 2 (2019)", emoji:"❄️", value:1450},
+          {name:"Toy Story 4 (2019)", emoji:"🤠", value:1073},
+          {name:"Toy Story 3 (2010)", emoji:"🤠", value:1067},
+          {name:"Finding Dory (2016)", emoji:"🐠", value:1029},
+          {name:"Zootopia (2016)", emoji:"🐰", value:1024},
+          {name:"Incredibles 2 (2018)", emoji:"🦸", value:1243},
+          {name:"Inside Out 2 (2024)", emoji:"🧠", value:1697},
+          {name:"Avengers: Endgame (2019)", emoji:"🦸", value:2799},
+          {name:"Avengers: Infinity War (2018)", emoji:"🦸", value:2052},
+          {name:"Spider-Man: No Way Home (2021)", emoji:"🕷️", value:1922},
+          {name:"Black Panther (2018)", emoji:"🐆", value:1349},
+          {name:"The Avengers (2012)", emoji:"🦸", value:1519},
+          {name:"Star Wars: The Force Awakens (2015)", emoji:"⭐", value:2071},
+          {name:"Star Wars: The Last Jedi (2017)", emoji:"⭐", value:1334},
+          {name:"Rogue One (2016)", emoji:"⭐", value:1058},
+          {name:"Beauty and the Beast (2017)", emoji:"🌹", value:1264},
+          {name:"The Lion King (2019)", emoji:"🦁", value:1657},
+          {name:"Moana (2016)", emoji:"🌊", value:643},
+          {name:"Coco (2017)", emoji:"💀", value:814},
+          {name:"Encanto (2021)", emoji:"🏠", value:256},
+          {name:"Aladdin (2019)", emoji:"🪔", value:1054},
+          {name:"Pirates of the Caribbean: Dead Man's Chest", emoji:"🏴‍☠️", value:1066},
+          {name:"Up (2009)", emoji:"🎈", value:735},
+          {name:"WALL-E (2008)", emoji:"🤖", value:521},
+          {name:"Ratatouille (2007)", emoji:"🐀", value:626},
+          {name:"Tangled (2010)", emoji:"💇‍♀️", value:592},
+          {name:"Big Hero 6 (2014)", emoji:"🤖", value:657}
+        ]
+      },
+      rideYears: {
+        label: "Ride Opened In", unit: "", emoji: "🎢",
+        items: [
+          {name:"It's a Small World (Disneyland)", emoji:"🌍", value:1966},
+          {name:"Pirates of the Caribbean", emoji:"🏴‍☠️", value:1967},
+          {name:"Haunted Mansion", emoji:"👻", value:1969},
+          {name:"Magic Kingdom Opens", emoji:"🏰", value:1971},
+          {name:"Space Mountain (MK)", emoji:"🚀", value:1975},
+          {name:"Big Thunder Mountain", emoji:"⛰️", value:1980},
+          {name:"EPCOT Opens", emoji:"🌐", value:1982},
+          {name:"Splash Mountain (original)", emoji:"💦", value:1989},
+          {name:"Hollywood Studios Opens", emoji:"🎬", value:1989},
+          {name:"Tower of Terror", emoji:"🏨", value:1994},
+          {name:"Animal Kingdom Opens", emoji:"🦒", value:1998},
+          {name:"Test Track", emoji:"🚗", value:1999},
+          {name:"Rock 'n' Roller Coaster", emoji:"🎸", value:1999},
+          {name:"Mission: SPACE", emoji:"🚀", value:2003},
+          {name:"Expedition Everest", emoji:"🏔️", value:2006},
+          {name:"Toy Story Mania", emoji:"🤠", value:2008},
+          {name:"Seven Dwarfs Mine Train", emoji:"💎", value:2014},
+          {name:"Frozen Ever After", emoji:"❄️", value:2016},
+          {name:"Avatar Flight of Passage", emoji:"🌿", value:2017},
+          {name:"Slinky Dog Dash", emoji:"🐕", value:2018},
+          {name:"Millennium Falcon Smugglers Run", emoji:"🚀", value:2019},
+          {name:"Mickey & Minnie's Runaway Railway", emoji:"🐭", value:2020},
+          {name:"Rise of the Resistance", emoji:"⚔️", value:2019},
+          {name:"Remy's Ratatouille Adventure", emoji:"🐀", value:2021},
+          {name:"Cosmic Rewind", emoji:"🚀", value:2022},
+          {name:"Tron Lightcycle Run", emoji:"💿", value:2023},
+          {name:"Tiana's Bayou Adventure", emoji:"🐸", value:2024}
+        ]
+      },
+      rideHeights: {
+        label: "Drop Height", unit: " ft", emoji: "📏",
+        items: [
+          {name:"Tower of Terror", emoji:"🏨", value:170},
+          {name:"Expedition Everest (drop)", emoji:"🏔️", value:80},
+          {name:"Splash Mountain", emoji:"💦", value:52},
+          {name:"Tiana's Bayou Adventure", emoji:"🐸", value:50},
+          {name:"Big Thunder Mountain", emoji:"⛰️", value:35},
+          {name:"Seven Dwarfs Mine Train", emoji:"💎", value:41},
+          {name:"Slinky Dog Dash", emoji:"🐕", value:38},
+          {name:"Rock 'n' Roller Coaster (max)", emoji:"🎸", value:80},
+          {name:"Space Mountain (max)", emoji:"🚀", value:90},
+          {name:"Tron Lightcycle Run", emoji:"💿", value:70},
+          {name:"Mount Everest (Expedition Everest peak)", emoji:"🏔️", value:199},
+          {name:"Cinderella Castle (height)", emoji:"🏰", value:189},
+          {name:"Spaceship Earth (sphere height)", emoji:"🌐", value:180},
+          {name:"Tree of Life (height)", emoji:"🌳", value:145},
+          {name:"Hollywood Tower Hotel (drop tower height total)", emoji:"🏨", value:199}
+        ]
+      },
+      rideLengths: {
+        label: "Ride Length", unit: " sec", emoji: "⏱",
+        items: [
+          {name:"Pirates of the Caribbean", emoji:"🏴‍☠️", value:540},
+          {name:"It's a Small World", emoji:"🌍", value:600},
+          {name:"Haunted Mansion", emoji:"👻", value:540},
+          {name:"Jungle Cruise", emoji:"🌴", value:600},
+          {name:"Spaceship Earth", emoji:"🌐", value:840},
+          {name:"Carousel of Progress", emoji:"🎠", value:1200},
+          {name:"Living with the Land", emoji:"🌽", value:840},
+          {name:"Frozen Ever After", emoji:"❄️", value:300},
+          {name:"Soarin'", emoji:"✈️", value:280},
+          {name:"Avatar Flight of Passage", emoji:"🌿", value:240},
+          {name:"Big Thunder Mountain", emoji:"⛰️", value:200},
+          {name:"Space Mountain", emoji:"🚀", value:170},
+          {name:"Splash Mountain", emoji:"💦", value:660},
+          {name:"Seven Dwarfs Mine Train", emoji:"💎", value:160},
+          {name:"Slinky Dog Dash", emoji:"🐕", value:120},
+          {name:"Tower of Terror", emoji:"🏨", value:240},
+          {name:"Rock 'n' Roller Coaster", emoji:"🎸", value:90},
+          {name:"Tron Lightcycle Run", emoji:"💿", value:60},
+          {name:"Cosmic Rewind", emoji:"🚀", value:180},
+          {name:"Peter Pan's Flight", emoji:"🧚", value:170}
+        ]
+      },
+      parkSize: {
+        label: "Park Size", unit: " acres", emoji: "🌳",
+        items: [
+          {name:"Magic Kingdom", emoji:"🏰", value:107},
+          {name:"EPCOT", emoji:"🌐", value:305},
+          {name:"Hollywood Studios", emoji:"🎬", value:135},
+          {name:"Animal Kingdom", emoji:"🦒", value:580},
+          {name:"Disney Springs", emoji:"🛍️", value:120},
+          {name:"Typhoon Lagoon", emoji:"🌊", value:61},
+          {name:"Blizzard Beach", emoji:"❄️", value:66},
+          {name:"Disneyland Park (CA)", emoji:"🏰", value:97},
+          {name:"California Adventure", emoji:"🌉", value:72},
+          {name:"Disneyland Paris", emoji:"🇫🇷", value:140},
+          {name:"Tokyo Disneyland", emoji:"🗼", value:115},
+          {name:"Shanghai Disneyland", emoji:"🇨🇳", value:240},
+          {name:"All Walt Disney World resort", emoji:"🌎", value:25000},
+          {name:"Central Park (NYC, for comparison)", emoji:"🌳", value:843},
+          {name:"Universal Studios Florida", emoji:"🎬", value:108},
+          {name:"Islands of Adventure", emoji:"🏝️", value:101}
+        ]
+      }
+    };
+
+    let topic = null;
+    let pool = [];
+    let leftItem = null, rightItem = null;
+    let round = 0, score = 0;
+    let totalRounds = 10;
+    let answered = false;
+
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function startGame(t) {
+      topic = TOPICS[t];
+      pool = shuffle(topic.items);
+      round = 0; score = 0;
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      leftItem = pool.pop();
+      next();
+    }
+
+    function next() {
+      if (round >= totalRounds || pool.length === 0) { endGame(); return; }
+      round++;
+      answered = false;
+      // pick a different value
+      let attempts = 0;
+      do {
+        rightItem = pool.pop();
+        attempts++;
+      } while (rightItem && rightItem.value === leftItem.value && pool.length > 0 && attempts < 5);
+      if (!rightItem) { endGame(); return; }
+      document.getElementById('roundPill').textContent = `Round ${round} / ${totalRounds}`;
+      document.getElementById('scorePill').textContent = '✅ ' + score;
+      document.getElementById('topicLabel').textContent = topic.label.toUpperCase();
+      document.getElementById('leftEmoji').textContent = leftItem.emoji;
+      document.getElementById('leftName').textContent = leftItem.name;
+      document.getElementById('leftValue').textContent = formatValue(leftItem.value);
+      document.getElementById('rightEmoji').textContent = rightItem.emoji;
+      document.getElementById('rightName').textContent = rightItem.name;
+      document.getElementById('rightValue').textContent = '?';
+      document.getElementById('guessBtns').classList.remove('hidden');
+      document.getElementById('resultBox').classList.add('hidden');
+    }
+
+    function formatValue(v) {
+      if (topic.unit === '$M') return '$' + v + 'M';
+      return v + topic.unit;
+    }
+
+    function guess(dir) {
+      if (answered) return;
+      answered = true;
+      const correct = (dir === 'higher' && rightItem.value > leftItem.value)
+                   || (dir === 'lower' && rightItem.value < leftItem.value);
+      document.getElementById('rightValue').textContent = formatValue(rightItem.value);
+      if (correct) score++;
+      document.getElementById('resultLine').textContent = correct ? '✅ Correct!' : '❌ Wrong';
+      document.getElementById('resultLine').style.color = correct ? '#34d399' : '#f87171';
+      document.getElementById('guessBtns').classList.add('hidden');
+      document.getElementById('resultBox').classList.remove('hidden');
+      // The right item becomes the new left item for next round
+      leftItem = rightItem;
+    }
+
+    function endGame() {
+      document.getElementById('play').classList.add('hidden');
+      document.getElementById('end').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = score + ' / ' + totalRounds;
+      let rank = "👍 Casual fan";
+      if (score >= 9) rank = "👑 Disney royalty!";
+      else if (score >= 7) rank = "🌟 Walt would be proud";
+      else if (score >= 5) rank = "🎢 Solid park-goer";
+      else if (score >= 3) rank = "🐭 Just visiting";
+      document.getElementById('finalRank').textContent = rank;
+    }
+  </script>
+</body>
+</html>

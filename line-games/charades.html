@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#0b1d3a" />
   <title>Disney Charades</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .subcat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+    .subcat-row .btn { padding: 0.7rem 0.5rem; font-size: 0.9rem; }
+  </style>
 </head>
 <body>
   <main>
@@ -15,25 +19,28 @@
       <div style="width:64px;"></div>
     </div>
 
-    <!-- Setup screen -->
     <section id="setup" class="section">
       <div class="card">
         <h2 style="margin-bottom:0.6rem;">How to Play</h2>
         <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
-          One person holds the phone facing the group. Tap a category, then act out each prompt without speaking — others guess. Use the buttons when they get it right, skip, or want to move on.
+          One person holds the phone facing the group. Tap a category, pick a sub-category, then act out each prompt without speaking. Tap "Got it!" or "Skip" to advance.
         </p>
       </div>
 
-      <h3 style="margin:1.5rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Category</h3>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
-        <button class="btn btn-primary" onclick="startCat('characters')">🧑‍🎤 Characters</button>
-        <button class="btn btn-success" onclick="startCat('movies')">🎬 Movies</button>
-        <button class="btn btn-warn" onclick="startCat('rides')">🎢 Rides</button>
-        <button class="btn" onclick="startCat('all')">🎲 Everything</button>
+      <h3 style="margin:1.5rem 0 0.4rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Step 1 — Pick a Category</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem;">
+        <button class="btn btn-primary" onclick="pickCat('characters')">🧑‍🎤 Characters</button>
+        <button class="btn btn-success" onclick="pickCat('movies')">🎬 Movies</button>
+        <button class="btn btn-warn" onclick="pickCat('rides')">🎢 Rides</button>
+      </div>
+
+      <div id="subcatBox" class="hidden" style="margin-top:1rem;">
+        <h3 style="margin:0 0 0.4rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Step 2 — Pick a Sub-Category</h3>
+        <div id="subcatRow" class="subcat-row"></div>
+        <button class="btn btn-primary btn-lg btn-block" id="startBtn" onclick="startGame()" disabled style="margin-top:1rem;">▶ Start</button>
       </div>
     </section>
 
-    <!-- Play screen -->
     <section id="play" class="section hidden">
       <div class="stat-row">
         <div class="stat-pill" id="catPill">🎭</div>
@@ -44,7 +51,6 @@
       <div class="big-card">
         <div class="label" id="promptLabel">CHARACTER</div>
         <div class="prompt" id="promptText">Ready?</div>
-        <div class="sub" id="promptHint"></div>
       </div>
 
       <div class="btn-row">
@@ -54,7 +60,6 @@
       <button class="btn btn-ghost btn-block" onclick="endGame()" style="margin-top:0.7rem;">End Round</button>
     </section>
 
-    <!-- End screen -->
     <section id="end" class="section hidden">
       <div class="big-card">
         <div class="label">ROUND OVER</div>
@@ -68,87 +73,77 @@
 
   <script>
     const DATA = {
-      characters: [
-        "Mickey Mouse","Minnie Mouse","Donald Duck","Daisy Duck","Goofy","Pluto",
-        "Elsa","Anna","Olaf","Kristoff","Sven",
-        "Simba","Mufasa","Timon","Pumbaa","Nala","Rafiki",
-        "Ariel","Sebastian","Flounder","King Triton","Ursula",
-        "Belle","Beast","Lumiere","Mrs. Potts","Chip","Cogsworth","Gaston",
-        "Aladdin","Jasmine","Genie","Abu","Iago","Jafar","Rajah",
-        "Woody","Buzz Lightyear","Jessie","Rex","Hamm","Slinky Dog","Bullseye","Forky",
-        "Lilo","Stitch","Moana","Maui","Heihei",
-        "Sulley","Mike Wazowski","Boo","Randall",
-        "Nemo","Marlin","Dory","Crush","Bruce",
-        "Mr. Incredible","Elastigirl","Dash","Violet","Jack-Jack","Frozone","Edna Mode",
-        "Wall-E","EVE","Remy","Linguini",
-        "Carl Fredricksen","Russell","Dug","Kevin",
-        "Joy","Sadness","Fear","Anger","Disgust","Bing Bong",
-        "Miguel","Hector","Dante",
-        "Tiana","Naveen","Louis",
-        "Rapunzel","Flynn Rider","Pascal","Maximus",
-        "Mulan","Mushu","Li Shang",
-        "Hercules","Megara","Hades","Phil",
-        "Peter Pan","Tinker Bell","Wendy","Captain Hook",
-        "Snow White","Dopey","Grumpy",
-        "Cinderella","Fairy Godmother","Prince Charming",
-        "Aurora","Maleficent","Flora Fauna Merryweather",
-        "Pinocchio","Jiminy Cricket",
-        "Alice","Cheshire Cat","Mad Hatter","White Rabbit","Queen of Hearts",
-        "Baloo","Mowgli","Bagheera","King Louie","Shere Khan",
-        "Pooh","Tigger","Piglet","Eeyore","Rabbit",
-        "Robin Hood","Little John",
-        "Merida","Queen Elinor",
-        "Vanellope","Wreck-It Ralph",
-        "Judy Hopps","Nick Wilde",
-        "Mirabel","Bruno","Isabela","Luisa",
-        "Pocahontas","Meeko",
-        "Jack Skellington","Sally","Zero",
-        "Mary Poppins","Bert",
-        "Kermit the Frog","Miss Piggy","Fozzie Bear","Gonzo",
-        "Chewbacca","Yoda","BB-8","R2-D2","C-3PO","Darth Vader","Luke Skywalker","Rey","Finn","Kylo Ren","Grogu","Mando",
-        "Iron Man","Spider-Man","Captain America","Thor","Hulk","Black Widow","Groot","Rocket Raccoon","Star-Lord"
-      ],
-      movies: [
-        "Frozen","Frozen 2","The Lion King","The Little Mermaid","Beauty and the Beast","Aladdin",
-        "Toy Story","Toy Story 2","Toy Story 3","Toy Story 4","Lilo & Stitch","Moana","Monsters Inc","Finding Nemo","Finding Dory",
-        "The Incredibles","Wall-E","Ratatouille","Up","Inside Out","Coco","The Princess and the Frog",
-        "Pocahontas","Mulan","Tangled","Hercules","Sleeping Beauty","Snow White","Cinderella",
-        "Peter Pan","Pinocchio","Bambi","101 Dalmatians","The Aristocats","The Jungle Book","Robin Hood",
-        "Winnie the Pooh","The Rescuers","Oliver and Company","The Great Mouse Detective","The Sword in the Stone",
-        "Atlantis","Treasure Planet","Brother Bear","Meet the Robinsons","Bolt","Wreck-It Ralph","Big Hero 6",
-        "Zootopia","Encanto","Raya and the Last Dragon","Luca","Turning Red","Onward","Soul",
-        "Pirates of the Caribbean","Mary Poppins","The Parent Trap","Cars","Cars 2","Cars 3","Brave",
-        "The Nightmare Before Christmas","Enchanted","Hocus Pocus","The Muppet Movie",
-        "Star Wars","The Avengers","Guardians of the Galaxy","Spider-Man","Black Panther"
-      ],
-      rides: [
-        "Space Mountain","Big Thunder Mountain","Splash Mountain","Pirates of the Caribbean","Haunted Mansion",
-        "It's a Small World","Peter Pan's Flight","Jungle Cruise","Seven Dwarfs Mine Train",
-        "Mickey & Minnie's Runaway Railway","Tomorrowland Speedway","Buzz Lightyear Space Ranger Spin",
-        "Astro Orbiter","Dumbo the Flying Elephant","Mad Tea Party","Carousel of Progress",
-        "Tower of Terror","Rock 'n' Roller Coaster","Slinky Dog Dash","Toy Story Mania","Alien Swirling Saucers",
-        "Star Tours","Millennium Falcon Smugglers Run","Rise of the Resistance",
-        "Soarin'","Test Track","Spaceship Earth","Frozen Ever After","Living with the Land",
-        "Remy's Ratatouille Adventure","Gran Fiesta Tour",
-        "Avatar Flight of Passage","Na'vi River Journey","Kilimanjaro Safaris","Expedition Everest","Kali River Rapids",
-        "Monorail","PeopleMover","Main Street Vehicles","Casey Jr Splash Station",
-        "Tiana's Bayou Adventure","Under the Sea Little Mermaid","Prince Charming's Carousel"
-      ]
+      characters: {
+        disney: ["Mickey Mouse","Minnie Mouse","Donald Duck","Daisy Duck","Goofy","Pluto","Elsa","Anna","Olaf","Kristoff","Sven","Simba","Mufasa","Timon","Pumbaa","Nala","Scar","Ariel","Sebastian","Flounder","Ursula","Belle","Beast","Lumiere","Mrs. Potts","Aladdin","Jasmine","Genie","Abu","Jafar","Stitch","Lilo","Moana","Maui","Tiana","Naveen","Rapunzel","Flynn Rider","Pascal","Mulan","Mushu","Hercules","Hades","Megara","Peter Pan","Tinker Bell","Captain Hook","Snow White","Cinderella","Aurora","Maleficent","Pinocchio","Jiminy Cricket","Alice","Cheshire Cat","Mad Hatter","Mowgli","Baloo","Pooh","Tigger","Piglet","Eeyore","Robin Hood","Merida","Mirabel","Bruno","Pocahontas","Tarzan","Hiro Hamada","Baymax","Judy Hopps","Nick Wilde","Vanellope","Wreck-It Ralph"],
+        pixar: ["Woody","Buzz Lightyear","Jessie","Rex","Hamm","Slinky Dog","Bullseye","Forky","Mr. Potato Head","Sulley","Mike Wazowski","Boo","Randall","Nemo","Marlin","Dory","Crush","Bruce","Mr. Incredible","Elastigirl","Dash","Violet","Jack-Jack","Frozone","Edna Mode","Wall-E","EVE","Remy","Linguini","Carl Fredricksen","Russell","Dug","Joy","Sadness","Fear","Anger","Disgust","Bing Bong","Anxiety","Miguel","Hector","Dante","Lightning McQueen","Mater","Sally"],
+        marvel: ["Iron Man","Spider-Man","Captain America","Thor","Hulk","Black Widow","Hawkeye","Black Panther","Doctor Strange","Captain Marvel","Ant-Man","Wasp","Star-Lord","Gamora","Rocket Raccoon","Groot","Drax","Scarlet Witch","Vision","Falcon","Bucky Barnes","Loki","Thanos","Shang-Chi","Moon Knight","Ms. Marvel","She-Hulk"],
+        starwars: ["Luke Skywalker","Leia","Han Solo","Chewbacca","Yoda","Obi-Wan Kenobi","Darth Vader","R2-D2","C-3PO","Padme Amidala","Anakin Skywalker","Rey","Finn","Poe Dameron","Kylo Ren","BB-8","Mace Windu","Boba Fett","Mando","Grogu","Ahsoka Tano","Lando Calrissian"]
+      },
+      movies: {
+        disney: ["Frozen","Frozen 2","The Lion King","The Little Mermaid","Beauty and the Beast","Aladdin","Lilo and Stitch","Moana","Mulan","Tangled","Hercules","Sleeping Beauty","Snow White","Cinderella","Peter Pan","Pinocchio","Bambi","101 Dalmatians","The Aristocats","The Jungle Book","Robin Hood","Winnie the Pooh","Wreck-It Ralph","Big Hero 6","Zootopia","Encanto","Raya and the Last Dragon","The Princess and the Frog","Pocahontas","Brave","Tarzan","Atlantis","Treasure Planet","The Hunchback of Notre Dame","The Emperor's New Groove","Wish"],
+        pixar: ["Toy Story","Toy Story 2","Toy Story 3","Toy Story 4","Monsters Inc","Monsters University","Finding Nemo","Finding Dory","The Incredibles","Incredibles 2","Wall-E","Ratatouille","Up","Inside Out","Inside Out 2","Coco","Soul","Onward","Luca","Turning Red","Lightyear","Elemental","Cars","Cars 2","Cars 3","A Bug's Life","Brave"],
+        marvel: ["Iron Man","The Avengers","Avengers: Endgame","Avengers: Infinity War","Black Panther","Spider-Man","Captain America","Thor","Doctor Strange","Captain Marvel","Guardians of the Galaxy","Ant-Man","Black Widow","Shang-Chi","WandaVision","Loki"],
+        starwars: ["A New Hope","The Empire Strikes Back","Return of the Jedi","The Phantom Menace","Attack of the Clones","Revenge of the Sith","The Force Awakens","The Last Jedi","The Rise of Skywalker","Rogue One","Solo","The Mandalorian","Andor","Ahsoka","The Clone Wars"],
+        liveaction: ["Pirates of the Caribbean","Mary Poppins","The Parent Trap","National Treasure","The Princess Diaries","Enchanted","Hocus Pocus","Maleficent","Cruella","The Lion King (2019)","Beauty and the Beast (2017)","Aladdin (2019)","Mulan (2020)","Cinderella (2015)","Pete's Dragon"]
+      },
+      rides: {
+        magic: ["Space Mountain","Big Thunder Mountain","Tiana's Bayou Adventure","Pirates of the Caribbean","Haunted Mansion","It's a Small World","Peter Pan's Flight","Jungle Cruise","Seven Dwarfs Mine Train","Mickey & Minnie's Runaway Railway","Tomorrowland Speedway","Buzz Lightyear Space Ranger Spin","Astro Orbiter","Dumbo","Mad Tea Party","Carousel of Progress","Under the Sea Little Mermaid","Prince Charming's Carousel","PeopleMover","Tron Lightcycle Run","Barnstormer"],
+        epcot: ["Soarin'","Test Track","Spaceship Earth","Frozen Ever After","Living with the Land","Remy's Ratatouille Adventure","Gran Fiesta Tour","The Seas with Nemo","Journey Into Imagination","Mission: SPACE","Guardians of the Galaxy: Cosmic Rewind"],
+        hollywood: ["Tower of Terror","Rock 'n' Roller Coaster","Slinky Dog Dash","Toy Story Mania","Alien Swirling Saucers","Star Tours","Millennium Falcon Smugglers Run","Rise of the Resistance","Mickey & Minnie's Runaway Railway"],
+        animal: ["Avatar Flight of Passage","Na'vi River Journey","Kilimanjaro Safaris","Expedition Everest","Kali River Rapids","It's Tough to be a Bug","TriceraTop Spin","DINOSAUR"]
+      }
+    };
+
+    const SUBCAT_LABELS = {
+      disney: '🏰 Disney',
+      pixar: '🚀 Pixar',
+      marvel: '🦸 Marvel',
+      starwars: '⭐ Star Wars',
+      liveaction: '🎬 Live Action',
+      magic: '🏰 MK',
+      epcot: '🌐 EPCOT',
+      hollywood: '🎬 HS',
+      animal: '🦒 AK',
+      all: '🎲 All'
     };
 
     let queue = [];
     let current = null;
-    let score = 0;
-    let skips = 0;
-    let currentCat = '';
+    let score = 0, skips = 0;
+    let pickedCat = '', pickedSub = '';
 
-    function shuffle(arr) {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
+    function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function pickCat(cat) {
+      pickedCat = cat;
+      pickedSub = '';
+      const subs = Object.keys(DATA[cat]);
+      const row = document.getElementById('subcatRow');
+      row.innerHTML = '';
+      subs.forEach(s => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-ghost';
+        b.textContent = SUBCAT_LABELS[s] || s;
+        b.onclick = () => pickSub(s);
+        row.appendChild(b);
+      });
+      const all = document.createElement('button');
+      all.className = 'btn btn-ghost';
+      all.textContent = SUBCAT_LABELS.all;
+      all.onclick = () => pickSub('all');
+      row.appendChild(all);
+      document.getElementById('subcatBox').classList.remove('hidden');
+      document.getElementById('startBtn').disabled = true;
+    }
+
+    function pickSub(sub) {
+      pickedSub = sub;
+      const buttons = document.querySelectorAll('#subcatRow .btn');
+      const subs = Object.keys(DATA[pickedCat]).concat(['all']);
+      buttons.forEach(b => { b.style.background='transparent'; b.style.color='white'; });
+      buttons[subs.indexOf(sub)].style.background = 'var(--gold)';
+      buttons[subs.indexOf(sub)].style.color = '#1e2a38';
+      document.getElementById('startBtn').disabled = false;
     }
 
     function labelFor(cat) {
@@ -164,17 +159,16 @@
       return '🎲';
     }
 
-    function startCat(cat) {
-      currentCat = cat;
+    function startGame() {
       let pool = [];
-      if (cat === 'all') {
-        pool = DATA.characters.concat(DATA.movies, DATA.rides);
+      if (pickedSub === 'all') {
+        Object.values(DATA[pickedCat]).forEach(arr => pool = pool.concat(arr));
       } else {
-        pool = DATA[cat];
+        pool = DATA[pickedCat][pickedSub];
       }
       queue = shuffle(pool);
       score = 0; skips = 0;
-      document.getElementById('catPill').textContent = iconFor(cat) + ' ' + labelFor(cat);
+      document.getElementById('catPill').textContent = iconFor(pickedCat) + ' ' + labelFor(pickedCat);
       document.getElementById('setup').classList.add('hidden');
       document.getElementById('play').classList.remove('hidden');
       next();
@@ -183,17 +177,9 @@
     function next() {
       if (queue.length === 0) { endGame(); return; }
       current = queue.pop();
-      document.getElementById('promptLabel').textContent = labelFor(currentCat === 'all' ? guessCat(current) : currentCat);
+      document.getElementById('promptLabel').textContent = labelFor(pickedCat);
       document.getElementById('promptText').textContent = current;
-      document.getElementById('promptHint').textContent = '';
       updatePills();
-    }
-
-    function guessCat(item) {
-      if (DATA.characters.includes(item)) return 'characters';
-      if (DATA.movies.includes(item)) return 'movies';
-      if (DATA.rides.includes(item)) return 'rides';
-      return 'all';
     }
 
     function correct() { score++; next(); }

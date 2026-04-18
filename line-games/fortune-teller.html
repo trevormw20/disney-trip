@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Disney Fortune Teller</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .crystal-ball {
+      width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #c4b5fd, #6d28d9 70%, #1e1b4b);
+      box-shadow: 0 0 60px rgba(167,139,250,0.4), inset -10px -20px 40px rgba(0,0,0,0.3);
+      margin: 1.5rem auto; display:flex; align-items:center; justify-content:center;
+      font-size: 4rem; transition: transform 0.5s ease;
+    }
+    .crystal-ball.shaking { animation: shake 0.6s ease; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0) rotate(0); }
+      25% { transform: translateX(-15px) rotate(-5deg); }
+      75% { transform: translateX(15px) rotate(5deg); }
+    }
+    .answer-card {
+      background: linear-gradient(135deg, #6d28d9, #ec4899);
+      color: white; padding: 1.5rem 1.2rem; border-radius: 20px;
+      text-align: center; font-size: 1.3rem; font-weight: 700; line-height: 1.4;
+      margin-top: 1rem; box-shadow: 0 10px 40px -10px rgba(167,139,250,0.5);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🔮 Disney Fortune Teller</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section class="section">
+      <div class="card" style="text-align:center;">
+        <h2 style="margin-bottom:0.5rem;">🔮 Ask the Disney Oracle</h2>
+        <p style="color:var(--muted); font-size:0.95rem;">
+          Think of any question (out loud is more fun!), then tap the crystal ball to receive your Disney-themed fortune.
+        </p>
+
+        <div class="crystal-ball" id="ball">🔮</div>
+
+        <div id="answerBox" class="hidden">
+          <div class="answer-card" id="answerText">...</div>
+          <div style="font-size:0.85rem; color:var(--muted); margin-top:0.6rem;" id="answerSource"></div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block" onclick="shake()" style="margin-top:1.5rem;">✨ Shake the Crystal Ball</button>
+        <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const ANSWERS = [
+      // Affirmative
+      {text:"\"Hakuna Matata.\" Stop worrying — yes, definitely.", source:"— Timon & Pumbaa"},
+      {text:"\"To infinity and beyond!\" Of course it will happen!", source:"— Buzz Lightyear"},
+      {text:"\"You'll be in my heart.\" The answer is a warm yes.", source:"— Tarzan"},
+      {text:"\"Let it go!\" Stop overthinking — yes!", source:"— Frozen"},
+      {text:"\"It is your destiny.\" Yes — embrace it.", source:"— The Emperor (Star Wars)"},
+      {text:"\"Adventure is out there!\" The fates say yes.", source:"— Up"},
+      {text:"\"You can fly!\" Absolutely yes.", source:"— Peter Pan"},
+      {text:"\"Beauty and the Beast taught us... yes, even unlikely things work out.\"", source:"— Mrs. Potts"},
+      {text:"\"Bibbidi-Bobbidi-Boo!\" Magic is on your side.", source:"— Fairy Godmother"},
+      {text:"\"All it takes is faith, trust, and a little pixie dust.\" YES.", source:"— Peter Pan"},
+      {text:"\"You've got a friend in me\" — and your friend says go for it.", source:"— Toy Story"},
+      {text:"\"How far I'll go!\" Definitely happening.", source:"— Moana"},
+
+      // Negative
+      {text:"\"Nope, no, never.\" Not happening today.", source:"— Eeyore"},
+      {text:"\"You shall not pass!\" — wait, that's wrong franchise. NO.", source:"— Definitely a wizard"},
+      {text:"\"I am Groot.\" (Translation: nope.)", source:"— Groot"},
+      {text:"\"This is the way... away from that idea.\"", source:"— The Mandalorian"},
+      {text:"\"You can't sit with us.\" Hard no.", source:"— Mean Girls (oops, wrong studio — still no)"},
+      {text:"\"Fish are friends, not food. And this is a no.\"", source:"— Bruce"},
+      {text:"\"It's not your time. The circle of life decrees: no.\"", source:"— Mufasa"},
+      {text:"\"Do or do not, there is no try... but the answer is do not.\"", source:"— Yoda"},
+
+      // Maybe / cryptic
+      {text:"\"The flower that blooms in adversity...\" The signs are unclear. Try later.", source:"— The Emperor (Mulan)"},
+      {text:"\"Even miracles take a little time.\" Be patient.", source:"— Fairy Godmother"},
+      {text:"\"Sometimes the right path is not the easiest one.\" The answer is complicated.", source:"— Grandmother Willow"},
+      {text:"\"You must look with better eyes than that.\" Reconsider your question.", source:"— Pocahontas"},
+      {text:"\"The past can hurt. But you can either run from it, or learn from it.\" Maybe.", source:"— Rafiki"},
+      {text:"\"Just keep swimming.\" The future is uncertain — keep going.", source:"— Dory"},
+      {text:"\"A great leader uses what's at hand.\" Trust your gut.", source:"— Tui"},
+      {text:"\"You control your destiny.\" The choice is yours.", source:"— Merida"},
+      {text:"\"All who wander are not lost... but they are confused.\" Try again.", source:"— Maleficent (probably)"},
+
+      // Silly / unique
+      {text:"\"Today, you will encounter a churro. This is a sign.\"", source:"— The Disney Snack Oracle"},
+      {text:"\"Beware: someone in your group will sing 'Let It Go' within the hour.\"", source:"— The Crystal Ball"},
+      {text:"\"A tiny rat in a chef's hat agrees with you.\"", source:"— Remy"},
+      {text:"\"The MagicBand has spoken: yes — but you'll lose it briefly.\"", source:"— The MagicBand"},
+      {text:"\"Hot take: it's-a-me, Mario! ...wait wrong park. Universal vibes only.\"", source:"— Bowser"},
+      {text:"\"Ask the next character you meet for confirmation.\"", source:"— The Oracle"},
+      {text:"\"Stitch chaos energy says: maybe. Probably. Yes. No. Yes.\"", source:"— Stitch"},
+      {text:"\"You will eat a Mickey-shaped food today. That's not really an answer but it's a fact.\"", source:"— Park-Wide Truth"},
+      {text:"\"The PeopleMover never lies. The answer is: keep moving.\"", source:"— PeopleMover"},
+      {text:"\"It's a Small World after all... and the answer is small but yes.\"", source:"— It's a Small World"},
+      {text:"\"Gaston says yes. But Gaston is wrong about most things, so... your call.\"", source:"— LeFou"},
+      {text:"\"The mice from Cinderella say YES — they have wisdom you wouldn't believe.\"", source:"— Jaq"},
+      {text:"\"Olaf would warm hug this idea. Go for it.\"", source:"— Olaf"}
+    ];
+
+    let lastIdx = -1;
+    function shake() {
+      const ball = document.getElementById('ball');
+      ball.classList.add('shaking');
+      setTimeout(() => ball.classList.remove('shaking'), 600);
+      let idx;
+      do {
+        idx = Math.floor(Math.random() * ANSWERS.length);
+      } while (idx === lastIdx && ANSWERS.length > 1);
+      lastIdx = idx;
+      setTimeout(() => {
+        const ans = ANSWERS[idx];
+        document.getElementById('answerText').textContent = ans.text;
+        document.getElementById('answerSource').textContent = ans.source;
+        document.getElementById('answerBox').classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate(150);
+      }, 700);
+    }
+  </script>
+</body>
+</html>

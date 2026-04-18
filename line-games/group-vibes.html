@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1d3a" />
+  <title>Group Disney Vibes</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <a class="back-btn" href="index.html">← Menu</a>
+      <div class="title-bar">🎭 Group Disney Vibes</div>
+      <div style="width:64px;"></div>
+    </div>
+
+    <section id="setup" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:0.6rem;">How to Play</h2>
+        <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
+          Phone picks a random person from your group + a Disney-themed prediction or comparison about them. Tap "Reveal!" to read it out loud. Pure roast/laugh fuel.
+        </p>
+      </div>
+
+      <h3 style="margin:1.2rem 0 0.6rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Players — tap to include</h3>
+      <div id="rosterGrid" class="roster-grid"></div>
+      <div class="roster-add">
+        <input class="field" id="customInput" placeholder="Add a name..." />
+        <button class="btn" onclick="addCustom()">+</button>
+      </div>
+      <div class="roster-actions">
+        <button class="btn btn-ghost" onclick="selectAll()">Select All</button>
+        <button class="btn btn-ghost" onclick="selectNone()">Clear</button>
+      </div>
+      <div class="roster-summary" id="rosterSummary">0 players selected</div>
+
+      <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start the Vibes</button>
+    </section>
+
+    <section id="play" class="section hidden">
+      <div class="big-card">
+        <div class="label">DISNEY VIBES</div>
+        <div class="prompt" id="vibeText" style="font-size:clamp(1.3rem, 5vw, 1.8rem); line-height:1.4;">Tap below to start!</div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" onclick="generateVibe()">🎲 New Vibe</button>
+      <a class="btn btn-ghost btn-block" href="index.html" style="margin-top:0.6rem;">← Back to Menu</a>
+    </section>
+  </main>
+
+  <script>
+    const FAMILY = ['Trevor','Niki','Rick','Alicia','Mikey','Mila','Michelle','Millie','Michael','Barbara','Eric','Carrie','Tyler','Tanner','Liam','Ian','Sophie','Lainey','Owen','Mia'];
+    const STORAGE_KEY = 'vibes_selected';
+    const CUSTOM_KEY = 'roster_custom';
+    const DEFAULT_ON = ['Trevor','Niki','Rick','Alicia','Mikey','Mila'];
+    let custom = JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]');
+    let selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || JSON.stringify(DEFAULT_ON)));
+    let players = [];
+
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function saveSelected() { localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected])); }
+    function saveCustom() { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); }
+    function renderRoster() {
+      const grid = document.getElementById('rosterGrid');
+      grid.innerHTML = '';
+      FAMILY.forEach(name => grid.appendChild(makeChip(name, false)));
+      custom.forEach((name, i) => grid.appendChild(makeChip(name, true, i)));
+      const cnt = [...selected].filter(n => FAMILY.includes(n) || custom.includes(n)).length;
+      document.getElementById('rosterSummary').textContent = cnt + ' player' + (cnt===1?'':'s') + ' selected';
+    }
+    function makeChip(name, isCustom, idx) {
+      const c = document.createElement('button');
+      c.className = 'chip-toggle' + (selected.has(name) ? ' on' : '') + (isCustom ? ' custom' : '');
+      c.onclick = () => toggleName(name);
+      c.appendChild(document.createTextNode(name));
+      if (isCustom) {
+        const x = document.createElement('span');
+        x.className = 'x'; x.textContent = '✕';
+        x.onclick = (e) => { e.stopPropagation(); custom.splice(idx,1); selected.delete(name); saveCustom(); saveSelected(); renderRoster(); };
+        c.appendChild(x);
+      }
+      return c;
+    }
+    function toggleName(name) { selected.has(name) ? selected.delete(name) : selected.add(name); saveSelected(); renderRoster(); }
+    function addCustom() {
+      const input = document.getElementById('customInput');
+      const v = input.value.trim();
+      if (!v) return;
+      if (!custom.includes(v) && !FAMILY.includes(v)) custom.push(v);
+      selected.add(v); input.value = '';
+      saveCustom(); saveSelected(); renderRoster();
+    }
+    function selectAll() { FAMILY.forEach(n => selected.add(n)); custom.forEach(n => selected.add(n)); saveSelected(); renderRoster(); }
+    function selectNone() { selected.clear(); saveSelected(); renderRoster(); }
+
+    // [P] = player name, [P2] = different player. {a|b|c} = pick one.
+    const VIBES = [
+      "[P] is giving major {Buzz Lightyear|Captain Hook|Genie|Maui|Stitch} energy today.",
+      "If [P] were a Disney villain, they'd be {Maleficent|Hades|Scar|Ursula|Jafar|Cruella}.",
+      "[P] will scream like Mike Wazowski on the next thrill ride.",
+      "[P] just walked past a churro stand without buying one. The audacity.",
+      "[P] would survive 3 minutes max in The Hunger Games... I mean, Tomorrowland line.",
+      "[P] is one Mickey ear short of full park-mode commitment.",
+      "[P] is acting suspiciously like Olaf — too cheerful, no winter coat.",
+      "If Disney made a movie about [P], it'd be called \"{Frozen|Tangled|Brave|Encanto|Moana}: The [P] Story\".",
+      "[P] will fall asleep on {It's a Small World|Carousel of Progress|the bus|Spaceship Earth} today.",
+      "[P] is one wrong meme away from becoming a Pixar short film.",
+      "[P] would totally trade their birthright for a {butterbeer|churro|Dole Whip|Mickey ice cream bar}.",
+      "[P] just fought [P2] over the last seat on a ride. Disney royalty drama.",
+      "[P] is acting like Donald Duck mid-meltdown — proceed with caution.",
+      "If [P] were a princess, the kingdom would last about {4 hours|2 days|a week|until lunch}.",
+      "[P]'s park spirit animal today is a {sleepy panda|hangry sloth|chaotic raccoon|determined squirrel}.",
+      "[P] would absolutely buy 3 souvenirs and immediately lose 2.",
+      "[P] is the {Buzz|Woody|Jessie|Forky} of this group, and we all know it.",
+      "[P] would beat anyone in a Disney trivia contest — except [P2], who is the secret champion.",
+      "[P]'s dance moves on Main Street will be parade-worthy.",
+      "[P] is more likely than anyone to befriend a cast member today.",
+      "[P] is one missed FastPass away from going full Cruella.",
+      "[P] just reminded everyone, again, that they are a princess at heart.",
+      "[P] would absolutely cry at the fireworks tonight. Absolutely.",
+      "[P] has the energy of someone who skipped sunscreen and regrets nothing.",
+      "[P] is acting like Goofy in a hurry — calm down, we'll get there.",
+      "[P] vs [P2] in a Disney trivia battle: [P] wins by being louder.",
+      "[P] secretly wants to be in the parade. Yes you do.",
+      "[P]'s mood is currently: {Hakuna Matata|Let It Go|Some Day My Prince Will Come|Be Our Guest}.",
+      "[P] is one Mickey waffle away from peak vacation joy.",
+      "If the group were the Pixar Inside Out emotions, [P] would be {Joy|Sadness|Anger|Disgust|Fear|Anxiety|Embarrassment|Boredom}.",
+      "[P] would convince [P2] to try ONE more ride, even though they're done.",
+      "[P] just hummed 'It's a Small World' on purpose. Unforgivable.",
+      "[P] is the most likely to {get a churro|buy ears|wave at every character|cry at the parade|fall in line for selfies}.",
+      "[P] is giving major Mufasa energy: wise, calm, secretly very tired.",
+      "[P] would name a baby after a Disney character. {Ariel|Aurora|Jasmine|Walt|Mickey|Belle}.",
+      "[P]'s next move: {nap|snack|princess photo op|fast pass scramble|complain about the heat}.",
+      "[P] just discovered they've been mispronouncing 'EPCOT' for years.",
+      "[P] is one wrong line choice away from snapping like Captain Hook.",
+      "[P]'s perfect Disney role: {ride operator|Mickey mascot|Tour guide|FastPass advisor|cotton candy vendor}.",
+      "If [P] were a sidekick, they'd be {Pumbaa|Olaf|Mushu|Sebastian|Pascal|Dug}.",
+      "[P] would 100% try to sneak into a backstage cast member area.",
+      "[P] just remembered they wanted to ride {Splash|Big Thunder|Tower of Terror|Avatar|Slinky Dog} again. Buckle up.",
+      "[P] is the unofficial group photographer today. [P2] is the model.",
+      "[P]'s reaction to the next thrill ride will be {hilarious|terrifying|inspiring|silent|legendary}.",
+      "[P] would rule the kingdom with {an iron fist|a butterbeer in hand|a princess wave|chaotic energy|a stack of FastPasses}.",
+      "[P] just judged someone's outfit. Internally.",
+      "[P] would absolutely have a Disney villain laugh if pushed.",
+      "[P] is currently radiating {Frozone cool|Edna Mode confidence|Dory chaos|Belle wisdom|Rapunzel optimism}.",
+      "If our group was a Disney movie, [P] would be the lead and [P2] the comic relief.",
+      "[P] is the reason we'll get a souvenir cup. Don't argue."
+    ];
+
+    function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function pickPlayer() { return players[Math.floor(Math.random() * players.length)]; }
+    function pickPlayerNot(exclude) {
+      if (players.length < 2) return exclude;
+      const others = players.filter(p => p !== exclude);
+      return others[Math.floor(Math.random() * others.length)];
+    }
+
+    function startGame() {
+      players = [...FAMILY, ...custom].filter(n => selected.has(n));
+      if (players.length < 1) { alert('Pick at least 1 player.'); return; }
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('play').classList.remove('hidden');
+      generateVibe();
+    }
+
+    function generateVibe() {
+      let template = pickRandom(VIBES);
+      const p1 = pickPlayer();
+      const p2 = pickPlayerNot(p1);
+      // resolve {a|b|c} options
+      template = template.replace(/\{([^}]+)\}/g, (m, opts) => {
+        const choices = opts.split('|');
+        return choices[Math.floor(Math.random() * choices.length)];
+      });
+      template = template.replace(/\[P2\]/g, p2).replace(/\[P\]/g, p1);
+      document.getElementById('vibeText').textContent = template;
+    }
+
+    renderRoster();
+  </script>
+</body>
+</html>
