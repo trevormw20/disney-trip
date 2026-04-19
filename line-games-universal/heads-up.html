@@ -77,6 +77,7 @@
     let roundLength = 60, timer = null, remaining = 0;
     let canFlip = true;
     let orientationListener = null;
+    let tiltState = 'neutral'; // 'neutral' = ready; 'cooldown' = waiting to return to vertical
 
     function setTime(s) {
       roundLength = s;
@@ -117,10 +118,19 @@
     }
 
     function attachOrientation() {
+      // State machine: phone starts vertical on forehead (beta ~90°).
+      // Must tilt well past threshold (down <25° or up >155°) to trigger,
+      // then return to near-vertical (55-125°) before another flip can fire.
       orientationListener = (e) => {
-        if (!canFlip || e.beta == null) return;
-        if (e.beta > -45 && e.beta < 45) markCorrect();
-        else if (e.beta < -135 || e.beta > 135) markPass();
+        if (e.beta == null) return;
+        const beta = e.beta;
+        if (tiltState === 'neutral') {
+          if (!canFlip) return;
+          if (beta < 25) { tiltState = 'cooldown'; markCorrect(); }
+          else if (beta > 155) { tiltState = 'cooldown'; markPass(); }
+        } else {
+          if (beta > 55 && beta < 125) tiltState = 'neutral';
+        }
       };
       window.addEventListener('deviceorientation', orientationListener);
     }

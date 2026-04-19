@@ -19,9 +19,17 @@
       <div class="card">
         <h2 style="margin-bottom:0.6rem;">How to Play</h2>
         <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
-          Phone shows an emoji puzzle. First person to shout the right Universal-themed movie wins the round — tap "Reveal" to confirm.
+          Phone shows an emoji puzzle. First person to shout the right answer wins the round — tap "Reveal" to confirm.
         </p>
       </div>
+
+      <h3 style="margin:1.2rem 0 0.5rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Category</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem;">
+        <button class="btn btn-ghost" onclick="pickCategory('movies')" id="cat-movies">🎬 Movies</button>
+        <button class="btn btn-ghost" onclick="pickCategory('characters')" id="cat-characters">🧑‍🎤 Characters</button>
+        <button class="btn btn-ghost" onclick="pickCategory('all')" id="cat-all">🎲 All</button>
+      </div>
+
       <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
     </section>
 
@@ -32,7 +40,7 @@
       </div>
 
       <div class="big-card">
-        <div class="label">DECODE THIS MOVIE</div>
+        <div class="label" id="playLabel">DECODE THIS MOVIE</div>
         <div class="prompt" id="emojiText" style="font-size:clamp(3rem, 14vw, 5rem); line-height:1.4;">🎬</div>
         <div class="sub" id="hintText"></div>
       </div>
@@ -59,7 +67,7 @@
   </main>
 
   <script>
-    const PUZZLES = [
+    const MOVIE_PUZZLES = [
       {emoji:"⚡👦🧙‍♂️📚", answer:"Harry Potter", hint:"The boy who lived", d:1},
       {emoji:"🦖🦕🏝️🧪", answer:"Jurassic Park", hint:"Welcome to a dino island", d:1},
       {emoji:"🦖🌍🦕🏃", answer:"Jurassic World", hint:"The reboot of a dino park", d:2},
@@ -112,6 +120,68 @@
       {emoji:"🦖🌍👑", answer:"Jurassic World Dominion", hint:"Dinos rule the earth", d:3}
     ];
 
+    const CHARACTER_PUZZLES = [
+      {emoji:"⚡👦🤓", answer:"Harry Potter", hint:"Scar-forehead wizard", d:1},
+      {emoji:"📚🦁👩‍🦱", answer:"Hermione Granger", hint:"Smartest witch of her age", d:1},
+      {emoji:"🦊🦁👨‍🦰", answer:"Ron Weasley", hint:"Harry's best friend", d:1},
+      {emoji:"🧔🏾👁️‍🗨️🪄", answer:"Albus Dumbledore", hint:"Hogwarts Headmaster", d:2},
+      {emoji:"👺❄️🐍", answer:"Voldemort", hint:"He who must not be named", d:1},
+      {emoji:"🦣👨‍🌾🐕", answer:"Hagrid", hint:"Half-giant groundskeeper", d:2},
+      {emoji:"🐍🧙‍♂️🖤", answer:"Severus Snape", hint:"Potions master", d:2},
+      {emoji:"🔴🍄🧢", answer:"Mario", hint:"It's-a-me!", d:1},
+      {emoji:"🟢🍄👨", answer:"Luigi", hint:"Mario's brother", d:1},
+      {emoji:"👸🌸👑🍑", answer:"Princess Peach", hint:"Always getting kidnapped", d:1},
+      {emoji:"🐢👺👑🔥", answer:"Bowser", hint:"Mario's arch-nemesis", d:1},
+      {emoji:"🟢🦖🥚", answer:"Yoshi", hint:"Mario's dinosaur companion", d:1},
+      {emoji:"🍄🍄🔴⚪", answer:"Toad", hint:"Mushroom retainer", d:1},
+      {emoji:"🟢👹🏰", answer:"Shrek", hint:"An ogre with layers", d:1},
+      {emoji:"🫏🗣️🎙️", answer:"Donkey", hint:"Shrek's best friend", d:1},
+      {emoji:"👸👠🔴", answer:"Fiona", hint:"Shrek's princess", d:2},
+      {emoji:"🐱👢⚔️👀", answer:"Puss in Boots", hint:"Big eyes, sharp sword", d:1},
+      {emoji:"🐉🖤🌙", answer:"Toothless", hint:"Hiccup's Night Fury", d:1},
+      {emoji:"👦🪓🧔🏻", answer:"Hiccup", hint:"Viking dragon tamer", d:2},
+      {emoji:"🐼🥋🇨🇳", answer:"Po", hint:"Dragon Warrior panda", d:1},
+      {emoji:"🐅👩‍🏫🥋", answer:"Tigress", hint:"Furious Five leader", d:3},
+      {emoji:"🟡👖👁️🍌", answer:"Minions", hint:"Banana!", d:1},
+      {emoji:"👨‍🦲💼👧👧👧", answer:"Gru", hint:"Villain turned dad", d:1},
+      {emoji:"👽🛸🌙🚲", answer:"E.T.", hint:"Phone home", d:1},
+      {emoji:"🔴🔌⚙️🎩", answer:"Iron Man", hint:"Genius, billionaire, playboy, philanthropist", d:1},
+      {emoji:"🕷️🕸️🧑‍🎓", answer:"Spider-Man", hint:"With great power...", d:1},
+      {emoji:"🔨⚡👨‍🦱", answer:"Thor", hint:"Asgardian thunder god", d:1},
+      {emoji:"🛡️⭐🇺🇸", answer:"Captain America", hint:"Star-spangled super soldier", d:1},
+      {emoji:"💚💪😡", answer:"Hulk", hint:"Angry green giant", d:1},
+      {emoji:"🦖🔵💨", answer:"Blue", hint:"Owen's trained raptor", d:2},
+      {emoji:"🧓👨‍🔬🦖", answer:"Dr. Alan Grant", hint:"Jurassic Park paleontologist", d:3},
+      {emoji:"👨‍💼🟡🎩", answer:"The Man in the Yellow Hat", hint:"George's owner", d:2},
+      {emoji:"🐒🟤👀", answer:"Curious George", hint:"Mischievous monkey", d:1},
+      {emoji:"🐱🎩🟥⬜", answer:"Cat in the Hat", hint:"Thing 1 and Thing 2's friend", d:1},
+      {emoji:"🟢😠🎄🐶", answer:"The Grinch", hint:"Hates Christmas", d:1},
+      {emoji:"👹🟩🦖🚗", answer:"Optimus Prime", hint:"Leader of the Autobots", d:2},
+      {emoji:"🤖💛🚗", answer:"Bumblebee", hint:"Yellow Autobot scout", d:1},
+      {emoji:"🧛🦇🌙", answer:"Dracula", hint:"Count of vampires", d:1},
+      {emoji:"🧟⚡👨‍🔬", answer:"Frankenstein's Monster", hint:"Reanimated creation", d:2},
+      {emoji:"🧻🏺🌀", answer:"The Mummy", hint:"Cursed pharaoh", d:2}
+    ];
+
+    let PUZZLES = MOVIE_PUZZLES;
+    let selectedCategory = 'movies';
+
+    function pickCategory(cat) {
+      selectedCategory = cat;
+      ['cat-movies','cat-characters','cat-all'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.background = 'transparent';
+        el.style.color = 'white';
+      });
+      const sel = document.getElementById('cat-' + cat);
+      sel.style.background = 'var(--gold)';
+      sel.style.color = '#1e2a38';
+      if (cat === 'movies')     PUZZLES = MOVIE_PUZZLES;
+      else if (cat === 'characters') PUZZLES = CHARACTER_PUZZLES;
+      else PUZZLES = MOVIE_PUZZLES.concat(CHARACTER_PUZZLES);
+    }
+    pickCategory('movies');
+
     let queue = [], current = null, count = 0;
 
     function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -133,6 +203,11 @@
       document.getElementById('answer').textContent = 'Tap reveal';
       document.getElementById('answer').classList.add('hidden-text');
       document.getElementById('hintBtn').disabled = false;
+      const labelText = selectedCategory === 'characters' ? 'GUESS THIS CHARACTER'
+                       : selectedCategory === 'all' ? 'DECODE THIS CLUE'
+                       : 'DECODE THIS MOVIE';
+      const lbl = document.getElementById('playLabel');
+      if (lbl) lbl.textContent = labelText;
     }
 
     function showHint() {

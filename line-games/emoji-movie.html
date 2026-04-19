@@ -20,9 +20,17 @@
       <div class="card">
         <h2 style="margin-bottom:0.6rem;">How to Play</h2>
         <p style="color:var(--muted); font-size:0.95rem; line-height:1.4;">
-          Phone shows an emoji puzzle. First person to shout the right Disney movie wins the round — tap "Reveal" to confirm. Track scores yourself or just play for fun!
+          Phone shows an emoji puzzle. First person to shout the right answer wins the round — tap "Reveal" to confirm. Track scores yourself or just play for fun!
         </p>
       </div>
+
+      <h3 style="margin:1.2rem 0 0.5rem; font-size:1rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Pick a Category</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem;">
+        <button class="btn btn-ghost" onclick="pickCategory('movies')" id="cat-movies">🎬 Movies</button>
+        <button class="btn btn-ghost" onclick="pickCategory('characters')" id="cat-characters">🧑‍🎤 Characters</button>
+        <button class="btn btn-ghost" onclick="pickCategory('all')" id="cat-all">🎲 All</button>
+      </div>
+
       <button class="btn btn-primary btn-lg btn-block" onclick="startGame()" style="margin-top:1rem;">▶ Start</button>
     </section>
 
@@ -34,7 +42,7 @@
       </div>
 
       <div class="big-card">
-        <div class="label">DECODE THIS DISNEY MOVIE</div>
+        <div class="label" id="playLabel">DECODE THIS DISNEY MOVIE</div>
         <div class="prompt" id="emojiText" style="font-size:clamp(3rem, 14vw, 5rem); line-height:1.4;">🎬</div>
         <div class="sub" id="hintText"></div>
       </div>
@@ -62,7 +70,7 @@
   </main>
 
   <script>
-    const PUZZLES = [
+    const MOVIE_PUZZLES = [
       {emoji:"🦁👑", answer:"The Lion King", hint:"A young cub becomes king", d:1},
       {emoji:"❄️👯‍♀️👸", answer:"Frozen", hint:"Two royal sisters", d:1},
       {emoji:"🧜‍♀️🦀🐠", answer:"The Little Mermaid", hint:"Under the sea", d:1},
@@ -116,6 +124,79 @@
       {emoji:"🐭🎩🧙‍♂️", answer:"Fantasia", hint:"Sorcerer's apprentice", d:3}
     ];
 
+    const CHARACTER_PUZZLES = [
+      {emoji:"🐭👂🎩", answer:"Mickey Mouse", hint:"The face of Disney", d:1},
+      {emoji:"🎀🐭👸", answer:"Minnie Mouse", hint:"Mickey's sweetheart", d:1},
+      {emoji:"🦆😡🕵️", answer:"Donald Duck", hint:"Temper in a sailor suit", d:1},
+      {emoji:"🐶👕🧢", answer:"Goofy", hint:"Gawrsh!", d:1},
+      {emoji:"👽🏝️🔫", answer:"Stitch", hint:"Experiment 626", d:1},
+      {emoji:"❄️👸💙", answer:"Elsa", hint:"The Snow Queen", d:1},
+      {emoji:"☃️🥕🫂", answer:"Olaf", hint:"Loves warm hugs", d:1},
+      {emoji:"🧜‍♀️🔴🎶", answer:"Ariel", hint:"Under the sea princess", d:1},
+      {emoji:"📚🌹👸", answer:"Belle", hint:"Reads a lot", d:1},
+      {emoji:"👸💇‍♀️🎨", answer:"Rapunzel", hint:"Super long hair", d:1},
+      {emoji:"🌊🛶💪", answer:"Moana", hint:"Sets sail to save her island", d:1},
+      {emoji:"🐸👸🎺", answer:"Tiana", hint:"New Orleans princess", d:2},
+      {emoji:"🪔🧞‍♂️💙", answer:"Genie", hint:"Three wishes", d:1},
+      {emoji:"🕌🐅👗", answer:"Jasmine", hint:"Sultan's daughter", d:2},
+      {emoji:"⚔️🐉🇨🇳", answer:"Mulan", hint:"Warrior in disguise", d:2},
+      {emoji:"🦁🟡👑", answer:"Simba", hint:"Circle of life", d:1},
+      {emoji:"🦁⚫🏜️", answer:"Scar", hint:"Bad uncle", d:2},
+      {emoji:"🟡🦒🐯🤓", answer:"Timon", hint:"Meerkat best friend", d:2},
+      {emoji:"🐗💨💩", answer:"Pumbaa", hint:"Warthog with gas", d:1},
+      {emoji:"🤠🎩⭐", answer:"Woody", hint:"Andy's favorite toy", d:1},
+      {emoji:"🚀♾️🫱", answer:"Buzz Lightyear", hint:"To infinity and beyond", d:1},
+      {emoji:"🤠👢🧵👧", answer:"Jessie", hint:"Yodeling cowgirl", d:2},
+      {emoji:"🔵🟦👁️‍🗨️", answer:"Sulley", hint:"Big blue fuzzy scarer", d:2},
+      {emoji:"🟢👁️", answer:"Mike Wazowski", hint:"One big eyeball", d:2},
+      {emoji:"🐠🧡🏫", answer:"Nemo", hint:"Just keep swimming", d:1},
+      {emoji:"🐟💙❓", answer:"Dory", hint:"Forgetful blue tang", d:1},
+      {emoji:"🐀👨‍🍳🍝", answer:"Remy", hint:"Little chef", d:2},
+      {emoji:"🏎️⚡95", answer:"Lightning McQueen", hint:"Ka-chow!", d:1},
+      {emoji:"🤖❤️🗑️", answer:"Wall-E", hint:"Last robot on Earth", d:2},
+      {emoji:"🧚✨🔔", answer:"Tinker Bell", hint:"Pixie dust fairy", d:1},
+      {emoji:"🧒🏴‍☠️✈️", answer:"Peter Pan", hint:"Never grows up", d:1},
+      {emoji:"🐻🍯💛", answer:"Winnie the Pooh", hint:"Silly old bear", d:1},
+      {emoji:"🐯🏃‍♂️💪", answer:"Tigger", hint:"Bouncy bouncy", d:1},
+      {emoji:"🫏😢💙", answer:"Eeyore", hint:"The gloomy donkey", d:2},
+      {emoji:"🤴🪞🧚‍♀️", answer:"Maleficent", hint:"Horns and purple", d:2},
+      {emoji:"🐙👸👑", answer:"Ursula", hint:"Sea witch", d:2},
+      {emoji:"🧔🏾🐍🪄", answer:"Jafar", hint:"Royal vizier turned snake", d:2},
+      {emoji:"🐾🖤🤍🚬", answer:"Cruella", hint:"Loves dalmatians (too much)", d:2},
+      {emoji:"👸🏻🍎😴", answer:"Snow White", hint:"Fairest of them all", d:1},
+      {emoji:"👠🎃🐭", answer:"Cinderella", hint:"Midnight curfew princess", d:1},
+      {emoji:"🎀🐕🐕", answer:"Pongo or Perdita", hint:"Dalmatian parents", d:3},
+      {emoji:"🔴🔌⚙️", answer:"Iron Man", hint:"Tony Stark's suit", d:1},
+      {emoji:"🕷️🕸️🧑‍🎓", answer:"Spider-Man", hint:"Your friendly neighborhood hero", d:1},
+      {emoji:"🔨⚡🌩️", answer:"Thor", hint:"God of thunder", d:1},
+      {emoji:"🛡️⭐🇺🇸", answer:"Captain America", hint:"Super soldier", d:1},
+      {emoji:"🌳🫱🗣️", answer:"Groot", hint:"I am ____", d:2},
+      {emoji:"⚫🗡️🌌", answer:"Darth Vader", hint:"Sith Lord", d:1},
+      {emoji:"🐻‍❄️🤎🎒", answer:"Chewbacca", hint:"Wookiee co-pilot", d:1},
+      {emoji:"⚪🟠🔵", answer:"BB-8", hint:"Rolling droid", d:2},
+      {emoji:"💋🥖👩‍🍳", answer:"Colette", hint:"Ratatouille's only female chef", d:3},
+      {emoji:"🏠🎈👴", answer:"Carl Fredricksen", hint:"Up's grumpy hero", d:2}
+    ];
+
+    let PUZZLES = MOVIE_PUZZLES; // default
+    let selectedCategory = 'movies';
+
+    function pickCategory(cat) {
+      selectedCategory = cat;
+      ['cat-movies','cat-characters','cat-all'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.background = 'transparent';
+        el.style.color = 'white';
+      });
+      const sel = document.getElementById('cat-' + cat);
+      sel.style.background = 'var(--gold)';
+      sel.style.color = '#1e2a38';
+      if (cat === 'movies')     PUZZLES = MOVIE_PUZZLES;
+      else if (cat === 'characters') PUZZLES = CHARACTER_PUZZLES;
+      else PUZZLES = MOVIE_PUZZLES.concat(CHARACTER_PUZZLES);
+    }
+    pickCategory('movies'); // default selection
+
     let queue = [];
     let current = null;
     let count = 0;
@@ -141,6 +222,12 @@
       document.getElementById('answer').textContent = 'Tap reveal';
       document.getElementById('answer').classList.add('hidden-text');
       document.getElementById('hintBtn').disabled = false;
+      // Update label based on category
+      const labelText = selectedCategory === 'characters' ? 'GUESS THIS DISNEY CHARACTER'
+                       : selectedCategory === 'all' ? 'DECODE THIS DISNEY CLUE'
+                       : 'DECODE THIS DISNEY MOVIE';
+      const lbl = document.getElementById('playLabel');
+      if (lbl) lbl.textContent = labelText;
     }
 
     function showHint() {
