@@ -163,6 +163,29 @@
     .dinner-picks-summary { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; min-height:28px; }
     .dpick-tag { font-size:.75rem; font-weight:700; padding:.22rem .65rem; border-radius:12px; color:#fff; }
 
+    /* ── Day picker ── */
+    .day-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin-top:.6rem; }
+    @media (max-width:480px) { .day-grid { grid-template-columns:repeat(2,1fr); } }
+    .day-card {
+      border:2px solid var(--border); border-radius:10px; padding:.75rem .5rem;
+      cursor:pointer; transition:all .15s; background:#fff; text-align:center;
+      user-select:none; position:relative;
+    }
+    .day-card:hover { border-color:#a5b4fc; background:#f5f3ff; }
+    .day-card.picked-1 { border-color:#d97706; background:#fffbeb; }
+    .day-card.picked-2 { border-color:#1a6fc4; background:#eff6ff; }
+    .day-card.picked-3 { border-color:#059669; background:#f0fdf4; }
+    .day-num { font-size:1.4rem; font-weight:700; line-height:1; }
+    .day-label { font-size:.7rem; color:var(--muted); margin-top:.3rem; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+    .day-rank {
+      position:absolute; top:.3rem; right:.4rem; font-size:.68rem; font-weight:700;
+      width:20px; height:20px; border-radius:50%; display:none;
+      align-items:center; justify-content:center; color:#fff;
+    }
+    .day-card.picked-1 .day-rank { display:flex; background:#d97706; }
+    .day-card.picked-2 .day-rank { display:flex; background:#1a6fc4; }
+    .day-card.picked-3 .day-rank { display:flex; background:#059669; }
+
     /* ── Lanyard/gear picker ── */
     .lanyard-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:.6rem; }
     @media (max-width:480px) { .lanyard-grid { grid-template-columns:1fr; } }
@@ -398,16 +421,16 @@
       </div>
     </div>
 
-    <div class="sec-head">💑 Couples' Private Dinner</div>
+    <div class="sec-head">💑 Couples' Private Dinner — Pick Your Preferred Days</div>
     <div class="card">
-      <label>Pick your <strong>top 3 restaurant choices</strong> for your couples' dinner night.
-        <span style="font-weight:400;color:var(--muted)"> Tap to rank — 1st, 2nd, 3rd.</span>
+      <label>Pick your <strong>top 3 preferred days</strong> for your couples' private dinner.
+        <span style="font-weight:400;color:var(--muted)"> Tap to rank — 1st choice, 2nd, 3rd.</span>
       </label>
-      <p class="dinner-hint">Each couple gets one special private dinner. Trevor will use your picks to assign nights and restaurants — everyone gets a top choice where possible. Tap a restaurant to select it, tap again to remove.</p>
-      <div class="dinner-picks-summary" id="dinner-summary">
-        <span style="font-size:.75rem;color:var(--muted);font-style:italic;">No picks yet — tap cards below</span>
+      <p class="dinner-hint">Each couple gets one special private dinner during the trip. The coordinator will handle the restaurant selection and send you a special dinner invite closer to the trip. Just pick your top 3 days that work best. Tap a day to select, tap again to remove.</p>
+      <div class="dinner-picks-summary" id="day-summary">
+        <span style="font-size:.75rem;color:var(--muted);font-style:italic;">No picks yet — tap days below</span>
       </div>
-      <div class="dinner-grid" id="dinner-grid"></div>
+      <div class="day-grid" id="day-grid"></div>
     </div>
 
     <div class="sec-head">🥜 Food Allergies &amp; Dietary Restrictions</div>
@@ -560,40 +583,16 @@ const PARKS = [
   ]},
 ];
 
-const DINNER_OPTS = [
-  { id:'victorias',    name:"Victoria & Albert's",       area:'disney',
-    loc:'Grand Floridian · Disney resort',
-    vibe:'The most prestigious restaurant on property. Formal attire, intimate setting, only 90 seats. A truly once-in-a-lifetime dinner.' },
-  { id:'calif_grill',  name:'California Grill',           area:'disney',
-    loc:'Contemporary Resort · 14th floor rooftop',
-    vibe:'Stunning Magic Kingdom fireworks sync from the rooftop. Reserve a window table for the full show. Upscale American cuisine.' },
-  { id:'topolinos',    name:"Topolino's Terrace",         area:'disney',
-    loc:'Riviera Resort · Rooftop · EPCOT area',
-    vibe:'Beautiful rooftop views of EPCOT and Hollywood Studios. Elegant and romantic with a French-Italian menu.' },
-  { id:'space_220',    name:'Space 220',                   area:'disney',
-    loc:'EPCOT · Future World',
-    vibe:'Dine in a simulated space station 220 miles above Earth. Animated Earth views out the "windows." The most unique setting on property.' },
-  { id:'tiffins',      name:'Tiffins',                    area:'disney',
-    loc:'Animal Kingdom',
-    vibe:"Animal Kingdom's finest. Globally-inspired cuisine in richly decorated themed rooms. Very adult, very refined." },
-  { id:'be_our_guest', name:'Be Our Guest',               area:'disney',
-    loc:"Magic Kingdom · Beast's Castle",
-    vibe:"Dinner inside the Beast's enchanted castle — ballroom, rose gallery, West Wing. The most atmospheric restaurant at Magic Kingdom." },
-  { id:'brown_derby',  name:'Hollywood Brown Derby',      area:'disney',
-    loc:'Hollywood Studios',
-    vibe:"1930s Hollywood supper club replica. Signature Cobb salad, celebrity caricatures lining the walls. Classic and elegant." },
-  { id:'mythos',       name:'Mythos Restaurant',          area:'universal',
-    loc:'Islands of Adventure · volcano cave over lagoon',
-    vibe:'Voted #1 theme park restaurant worldwide. Dramatic volcano cave setting over a lagoon. Mediterranean cuisine. Truly special.' },
-  { id:'bigfire',      name:'Bigfire',                    area:'universal',
-    loc:'Universal CityWalk · lakeside',
-    vibe:'Upscale wood-fire American cuisine on the lakeside. Great for a relaxed but elevated couples evening away from the parks.' },
-  { id:'fogo',         name:'Fogo de Chão',               area:'both',
-    loc:'Downtown Orlando · ~25 min from Disney · ~20 min from Universal',
-    vibe:'Premium Brazilian churrascaria. Endless tableside carved meats, upscale atmosphere. Great for people who love meat and a lively evening.' },
-  { id:'texas_brazil', name:'Texas de Brazil',            area:'both',
-    loc:"I-Drive · ~15 min from Disney · ~5 min from Universal",
-    vibe:'Unlimited churrasco and massive salad bar. More casual than Fogo but still a great couples evening. Popular and fun.' },
+const DINNER_DAYS = [
+  { id:'day_1', num:1, label:'Day 1' },
+  { id:'day_2', num:2, label:'Day 2' },
+  { id:'day_3', num:3, label:'Day 3' },
+  { id:'day_4', num:4, label:'Day 4' },
+  { id:'day_5', num:5, label:'Day 5' },
+  { id:'day_6', num:6, label:'Day 6' },
+  { id:'day_7', num:7, label:'Day 7' },
+  { id:'day_8', num:8, label:'Day 8' },
+  { id:'day_9', num:9, label:'Day 9' },
 ];
 
 const CHARACTERS = [
@@ -669,7 +668,7 @@ const EXCITE_OPTS = [
 // ═══════════════════════════════════════════════
 const parkExcitement = {};   // { mk: 3, epcot: 5, ... }
 const rideChecked    = {};   // { 'mk_tron': true, ... }
-let dinnerPicks      = [];   // ordered array of up to 3 restaurant ids
+let dayPicks         = [];   // ordered array of up to 3 preferred day ids for couples' dinner
 let characterPicks   = [];   // ordered array of up to 3 character ids
 let lanyardPref      = '';   // 'keychain' or 'neck'
 let currentStep = 1;
@@ -797,58 +796,53 @@ function setRide(parkId, rideId, checked) {
 }
 
 // ═══════════════════════════════════════════════
-// DINNER PICKER
+// DAY PICKER (couples' dinner preferred days)
 // ═══════════════════════════════════════════════
-function renderDinnerGrid() {
-  const AREA_TAG = { disney:'Disney-area', universal:'Universal-area', both:'Both areas' };
-  const AREA_CLS = { disney:'tag-disney', universal:'tag-universal', both:'tag-both' };
-  document.getElementById('dinner-grid').innerHTML = DINNER_OPTS.map(r => `
-    <div class="dinner-card" id="dc-${r.id}" onclick="toggleDinner('${r.id}')">
-      <span class="dinner-rank" id="dr-${r.id}"></span>
-      <div class="dinner-name">${r.name}</div>
-      <div><span class="dinner-area-tag ${AREA_CLS[r.area]}">${AREA_TAG[r.area]}</span></div>
-      <div class="dinner-loc">📍 ${r.loc}</div>
-      <div class="dinner-vibe">${r.vibe}</div>
+function renderDayGrid() {
+  document.getElementById('day-grid').innerHTML = DINNER_DAYS.map(d => `
+    <div class="day-card" id="dc-${d.id}" onclick="toggleDay('${d.id}')">
+      <span class="day-rank" id="dr-${d.id}"></span>
+      <div class="day-num">${d.num}</div>
+      <div class="day-label">${d.label}</div>
     </div>`).join('');
 }
 
-function toggleDinner(id) {
-  const idx = dinnerPicks.indexOf(id);
+function toggleDay(id) {
+  const idx = dayPicks.indexOf(id);
   if (idx >= 0) {
-    dinnerPicks.splice(idx, 1);
+    dayPicks.splice(idx, 1);
   } else {
-    if (dinnerPicks.length >= 3) return; // max 3
-    dinnerPicks.push(id);
+    if (dayPicks.length >= 3) return; // max 3
+    dayPicks.push(id);
   }
-  updateDinnerUI();
+  updateDayUI();
 }
 
-function updateDinnerUI() {
+function updateDayUI() {
   const RANK_COLORS = ['#d97706','#1a6fc4','#059669'];
-  const RANK_LABELS = ['1st','2nd','3rd'];
-  // Reset all cards
-  DINNER_OPTS.forEach(r => {
-    const card = document.getElementById('dc-' + r.id);
-    const rank = document.getElementById('dr-' + r.id);
-    card.className = 'dinner-card';
+  DINNER_DAYS.forEach(d => {
+    const card = document.getElementById('dc-' + d.id);
+    const rank = document.getElementById('dr-' + d.id);
+    if (!card || !rank) return;
+    card.className = 'day-card';
     rank.textContent = '';
   });
-  // Apply picks
-  dinnerPicks.forEach((id, i) => {
+  dayPicks.forEach((id, i) => {
     const card = document.getElementById('dc-' + id);
     const rank = document.getElementById('dr-' + id);
-    card.classList.add('picked-' + (i + 1));
-    rank.textContent = i + 1;
+    if (card && rank) {
+      card.classList.add('picked-' + (i + 1));
+      rank.textContent = i + 1;
+    }
   });
-  // Summary bar
-  const sum = document.getElementById('dinner-summary');
-  if (!dinnerPicks.length) {
-    sum.innerHTML = '<span style="font-size:.75rem;color:var(--muted);font-style:italic;">No picks yet — tap cards below</span>';
+  const sum = document.getElementById('day-summary');
+  if (!dayPicks.length) {
+    sum.innerHTML = '<span style="font-size:.75rem;color:var(--muted);font-style:italic;">No picks yet — tap days below</span>';
     return;
   }
-  sum.innerHTML = dinnerPicks.map((id, i) => {
-    const r = DINNER_OPTS.find(x => x.id === id);
-    return `<span class="dpick-tag" style="background:${RANK_COLORS[i]}">#${i+1} ${r ? r.name : id}</span>`;
+  sum.innerHTML = dayPicks.map((id, i) => {
+    const d = DINNER_DAYS.find(x => x.id === id);
+    return `<span class="dpick-tag" style="background:${RANK_COLORS[i]}">#${i+1} ${d ? d.label : id}</span>`;
   }).join('');
 }
 
@@ -953,7 +947,7 @@ function buildSubmit() {
     parks,
     dayPrefs:    getChipVals('day-prefs'),
     specialPrefs:getChipVals('special-prefs'),
-    dinnerPicks: dinnerPicks.slice(),       // top 3 restaurant ids in order
+    dayPicks: dayPicks.slice(),             // top 3 preferred days for couples' dinner
     characterPicks: characterPicks.slice(), // top 3 character ids in order
     characterOther: charOther,              // free-text characters not in list
     lanyardPref,                            // 'keychain' | 'neck' | ''
@@ -1001,7 +995,7 @@ function copyJSON() {
 // ═══════════════════════════════════════════════
 renderParkRatings();
 renderRideList();
-renderDinnerGrid();
+renderDayGrid();
 renderCharacterGrid();
 // Open all parks by default on desktop, closed on mobile
 if (window.innerWidth > 600) {
