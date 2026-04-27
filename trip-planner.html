@@ -2451,10 +2451,11 @@ function dayCardHTML(i) {
         </select>
         ${(d.type !== 'tbd' && d.type !== 'travel_in' && d.type !== 'travel_out') ? (() => {
           const rests           = getRestaurantsForDay(d.type);
+          const familyRests     = getFamilyRestaurantsForDay(d.type);
           const selRestId       = dinnerRestaurants[i] || '';
           const selRest         = DINNER_RESTAURANTS.find(r => r.id === selRestId);
           const familyRestId    = familyDinnerRestaurants[i] || '';
-          const familyRest      = DINNER_RESTAURANTS.find(r => r.id === familyRestId);
+          const familyRest      = FAMILY_RESTAURANTS.find(r => r.id === familyRestId);
           const areaHint        = d.type.startsWith('disney_')    || d.type === 'pool_disney'  ? 'Disney-area' :
                                   d.type.startsWith('universal_') || d.type === 'pool_univ'    ? 'Universal-area' : 'All';
           const coupleOpts      = DINNER_COUPLES.map(c =>
@@ -2463,19 +2464,28 @@ function dayCardHTML(i) {
           const restOpts        = rests.map(r =>
             '<option value="' + r.id + '"' + (selRestId === r.id ? ' selected' : '') + '>' + r.name + '  ·  ~$' + r.price + '/couple</option>'
           ).join('');
-          const familyRestOpts  = rests.map(r =>
-            '<option value="' + r.id + '"' + (familyRestId === r.id ? ' selected' : '') + '>' + r.name + '  ·  ~$' + r.price + '/person</option>'
+          // Family dropdown — group by location with optgroups
+          const familyByLoc = {};
+          familyRests.forEach(r => {
+            const primary = r.loc[0];
+            (familyByLoc[primary] = familyByLoc[primary] || []).push(r);
+          });
+          const familyRestOpts = Object.entries(familyByLoc).map(([locKey, rs]) =>
+            '<optgroup label="' + (LOC_LABELS[locKey] || locKey) + '">' +
+              rs.map(r => '<option value="' + r.id + '"' + (familyRestId === r.id ? ' selected' : '') + '>' + r.name + '  ·  ~$' + r.price + '/person</option>').join('') +
+            '</optgroup>'
           ).join('');
           const restInfo        = selRest
             ? '<div class="dcb-rest-info">📍 ' + selRest.location + ' &nbsp;·&nbsp; 💰 ~$' + selRest.price + '/couple &nbsp;·&nbsp; ' + selRest.note + '</div>'
             : '';
+          const familyLocLabel  = familyRest ? (LOC_LABELS[familyRest.loc[0]] || familyRest.loc[0]) : '';
           const familyRestInfo  = familyRest
-            ? '<div class="dcb-rest-info" style="background:#f0fdf4;border-color:#86efac;">📍 ' + familyRest.location + ' &nbsp;·&nbsp; 💰 ~$' + familyRest.price + '/person &nbsp;·&nbsp; ' + familyRest.note + '</div>'
+            ? '<div class="dcb-rest-info" style="background:#f0fdf4;border-color:#86efac;">📍 ' + familyLocLabel + ' &nbsp;·&nbsp; 💰 ~$' + familyRest.price + '/person &nbsp;·&nbsp; ' + familyRest.note + '</div>'
             : '';
 
-          // ── Medieval Times upgrade panel (shown if MT picked in either row) ──
-          const isMtCouples = selRestId === 'medieval_times';
-          const isMtFamily  = familyRestId === 'medieval_times';
+          // ── Medieval Times upgrade panel (use isMedievalTimes flag — works for both lists) ──
+          const isMtCouples = !!(selRest && selRest.isMedievalTimes);
+          const isMtFamily  = !!(familyRest && familyRest.isMedievalTimes);
           const showMt      = isMtCouples || isMtFamily;
           let mtPanel = '';
           if (showMt) {
@@ -3519,6 +3529,183 @@ function getRestaurantsForDay(dayType) {
     isUniversal ? (r.area === 'universal' || r.area === 'both') :
     true  // rest / free / tbd — show all
   );
+}
+
+// ── Comprehensive family-friendly restaurant list (used for family dinner row) ──
+// Includes everything from quick-service to upscale, organized by location.
+const FAMILY_RESTAURANTS = [
+  // ─── Magic Kingdom (in-park) ───
+  { id:'be_our_guest_f',    name:"Be Our Guest",                loc:['mk'],         price:65, note:"Beast's enchanted castle · French · iconic" },
+  { id:'cinderella',        name:"Cinderella's Royal Table",    loc:['mk'],         price:90, note:"Princess character meal inside the castle · prix-fixe" },
+  { id:'crystal_palace',    name:"Crystal Palace",              loc:['mk'],         price:55, note:"Pooh & friends character buffet" },
+  { id:'liberty_tree',      name:"Liberty Tree Tavern",         loc:['mk'],         price:55, note:"Colonial American · whole turkey + sides served family-style" },
+  { id:'skipper_canteen',   name:"Skipper Canteen",             loc:['mk'],         price:45, note:"Adventureland · Jungle Cruise themed · global menu" },
+  { id:'plaza',             name:"The Plaza Restaurant",        loc:['mk'],         price:35, note:"Main Street · classic American sandwiches & sundaes" },
+  { id:'tonys',             name:"Tony's Town Square",          loc:['mk'],         price:40, note:"Lady & the Tramp themed · classic Italian" },
+  // ─── MK-Area Resorts (monorail/short walk from MK) ───
+  { id:'ohana',             name:"'Ohana",                       loc:['mk_resort'], price:75, note:"Polynesian Resort · all-you-care-to-enjoy skewers · iconic family dinner" },
+  { id:'chef_mickey',       name:"Chef Mickey's",                loc:['mk_resort'], price:65, note:"Contemporary Resort · Mickey & friends character buffet" },
+  { id:'cali_grill_f',      name:"California Grill",             loc:['mk_resort'], price:120, note:"Contemporary rooftop · MK fireworks views · upscale" },
+  { id:'storybook',         name:"Storybook Dining @ Artist Point", loc:['mk_resort'], price:80, note:"Wilderness Lodge · Snow White character meal w/ Evil Queen" },
+  { id:'whispering',        name:"Whispering Canyon Café",       loc:['mk_resort'], price:55, note:"Wilderness Lodge · cowboy theme · interactive servers · skillets" },
+  { id:'1900_park',         name:"1900 Park Fare",               loc:['mk_resort'], price:75, note:"Grand Floridian · character buffet" },
+  { id:'trails_end',        name:"Trail's End Restaurant",       loc:['mk_resort'], price:45, note:"Fort Wilderness · BBQ buffet · campfire vibes" },
+  { id:'narcoossees',       name:"Narcoossee's",                 loc:['mk_resort'], price:95, note:"Grand Floridian · waterfront seafood · MK fireworks views" },
+
+  // ─── EPCOT (in-park, World Showcase) ───
+  { id:'le_cellier',        name:"Le Cellier Steakhouse",        loc:['epcot'],     price:75, note:"Canada pavilion · cozy basement steakhouse · top reservation" },
+  { id:'coral_reef',        name:"Coral Reef Restaurant",        loc:['epcot'],     price:65, note:"Living Seas pavilion · floor-to-ceiling fish tank views · seafood" },
+  { id:'garden_grill',      name:"Garden Grill",                 loc:['epcot'],     price:65, note:"Land pavilion · rotating restaurant · Mickey & Pluto family-style" },
+  { id:'biergarten',        name:"Biergarten",                   loc:['epcot'],     price:60, note:"Germany pavilion · buffet · live polka music & dancing" },
+  { id:'rose_crown',        name:"Rose & Crown Pub",             loc:['epcot'],     price:50, note:"UK pavilion · fish & chips, shepherd's pie · pub vibe + fireworks views" },
+  { id:'teppan_edo',        name:"Teppan Edo",                   loc:['epcot'],     price:65, note:"Japan pavilion · teppanyaki tables · chef knife performance" },
+  { id:'san_angel',         name:"San Angel Inn",                loc:['epcot'],     price:55, note:"Mexico pavilion · indoor twilight setting · Mexican classics" },
+  { id:'akershus',          name:"Akershus Royal Banquet",       loc:['epcot'],     price:75, note:"Norway pavilion · princess character meal" },
+  { id:'spice_road',        name:"Spice Road Table",             loc:['epcot'],     price:50, note:"Morocco pavilion · Mediterranean small plates · waterfront" },
+  { id:'via_napoli',        name:"Via Napoli Ristorante",        loc:['epcot'],     price:50, note:"Italy pavilion · authentic wood-fired Naples pizza" },
+  { id:'tutto_italia',      name:"Tutto Italia Ristorante",      loc:['epcot'],     price:55, note:"Italy pavilion · classic Italian · pasta & meats" },
+  { id:'chefs_france',      name:"Chefs de France",              loc:['epcot'],     price:65, note:"France pavilion · classic Parisian bistro · French onion soup" },
+  { id:'monsieur_paul',     name:"Monsieur Paul",                loc:['epcot'],     price:90, note:"France pavilion (upstairs) · upscale French · prix fixe" },
+  { id:'tokyo_dining',      name:"Tokyo Dining",                 loc:['epcot'],     price:55, note:"Japan pavilion · sushi & traditional Japanese" },
+  // ─── EPCOT-Area Resorts (Boardwalk/Beach Club/Yacht Club/Riviera/Swan-Dolphin) ───
+  { id:'topolinos_f',       name:"Topolino's Terrace",           loc:['epcot_resort'], price:85, note:"Riviera Resort rooftop · French-Italian · EPCOT/HS fireworks views" },
+  { id:'trattoria_forno',   name:"Trattoria al Forno",           loc:['epcot_resort'], price:55, note:"Boardwalk · Italian · also Bon Voyage Adventure character bkfst" },
+  { id:'flying_fish',       name:"Flying Fish",                  loc:['epcot_resort'], price:80, note:"Boardwalk · upscale seafood" },
+  { id:'beaches_cream',     name:"Beaches & Cream Soda Shop",    loc:['epcot_resort'], price:35, note:"Beach Club · retro 50s diner · giant Kitchen Sink sundae (8 scoops!)" },
+  { id:'yachtsman',         name:"Yachtsman Steakhouse",         loc:['epcot_resort'], price:90, note:"Yacht Club · upscale steakhouse" },
+  { id:'cape_may',          name:"Cape May Cafe",                loc:['epcot_resort'], price:60, note:"Beach Club · seafood/character buffet" },
+
+  // ─── Hollywood Studios ───
+  { id:'50s_prime',         name:"50's Prime Time Cafe",         loc:['hs'],        price:50, note:"Themed like Mom's 1950s house · servers IN character · classic comfort food (meatloaf!)" },
+  { id:'sci_fi',            name:"Sci-Fi Dine-In Theater",       loc:['hs'],        price:50, note:"Eat in classic-car booths watching old sci-fi clips · burgers & milkshakes" },
+  { id:'mama_melrose',      name:"Mama Melrose's",               loc:['hs'],        price:50, note:"Hollywood Italian · pizzas & pasta" },
+  { id:'brown_derby_f',     name:"Hollywood Brown Derby",        loc:['hs'],        price:80, note:"1930s Hollywood supper club replica · Cobb salad · upscale" },
+  { id:'hollywood_vine',    name:"Hollywood & Vine",             loc:['hs'],        price:60, note:"Disney Junior character buffet (great for little kids)" },
+  { id:'ogas',              name:"Oga's Cantina",                 loc:['hs'],        price:35, note:"Galaxy's Edge bar · Star Wars themed cocktails & snacks (not full dinner)" },
+  { id:'docking_bay',       name:"Docking Bay 7",                loc:['hs'],        price:25, note:"Galaxy's Edge quick service · creative galactic-themed plates" },
+
+  // ─── Animal Kingdom ───
+  { id:'tiffins_f',         name:"Tiffins",                       loc:['ak'],        price:90, note:"AK's finest · globally-inspired · multiple themed rooms · upscale" },
+  { id:'yak_yeti',          name:"Yak & Yeti",                    loc:['ak'],        price:50, note:"Pan-Asian fusion · Himalayan-themed · bigger menu" },
+  { id:'tusker',            name:"Tusker House",                  loc:['ak'],        price:60, note:"African character buffet · Mickey & friends in safari outfits" },
+  { id:'rainforest_ak',     name:"Rainforest Cafe (AK)",          loc:['ak'],        price:45, note:"Themed jungle restaurant · animatronic animals · big kid wow" },
+  { id:'satuli',            name:"Satu'li Canteen",              loc:['ak'],        price:25, note:"Pandora quick service · healthy bowls · BEST quick-service at WDW" },
+  { id:'flame_tree',        name:"Flame Tree Barbecue",          loc:['ak'],        price:25, note:"Quick service BBQ · ribs, smoked chicken · waterfront tables" },
+  // ─── AK Lodge ───
+  { id:'sanaa',             name:"Sanaa",                         loc:['ak_resort'], price:60, note:"AK Lodge · African-Indian · giraffes & zebras visible from window" },
+  { id:'boma',              name:"Boma",                          loc:['ak_resort'], price:60, note:"AK Lodge · African buffet · zebra dome desserts" },
+  { id:'jiko',              name:"Jiko - The Cooking Place",     loc:['ak_resort'], price:90, note:"AK Lodge · upscale African-inspired · top wine list" },
+
+  // ─── Disney Springs ───
+  { id:'homecomin',         name:"Homecomin' Florida Kitchen",   loc:['springs'],   price:55, note:"Chef Art Smith · Southern comfort food · famous fried chicken" },
+  { id:'boathouse',         name:"The Boathouse",                loc:['springs'],   price:75, note:"Waterfront · upscale seafood & steaks · amphicar tours" },
+  { id:'morimoto',          name:"Morimoto Asia",                loc:['springs'],   price:65, note:"Iron Chef Morimoto · pan-Asian · stunning two-story room" },
+  { id:'trex',              name:"T-REX Cafe",                   loc:['springs'],   price:50, note:"Dinosaur themed · animatronics · KID FAVORITE" },
+  { id:'rainforest_ds',     name:"Rainforest Cafe (DS)",         loc:['springs'],   price:45, note:"Themed jungle restaurant · animatronic animals" },
+  { id:'paddlefish',        name:"Paddlefish",                   loc:['springs'],   price:75, note:"Riverboat · seafood · upscale" },
+  { id:'maria_enzo',        name:"Maria & Enzo's",               loc:['springs'],   price:60, note:"Italian · grand 1930s airport-terminal themed room" },
+  { id:'frontera',          name:"Frontera Cocina",              loc:['springs'],   price:50, note:"Rick Bayless · upscale Mexican · mole & ceviche" },
+  { id:'wolfgang_puck',     name:"Wolfgang Puck Bar & Grill",    loc:['springs'],   price:55, note:"American · pizzas, salads · upscale-casual" },
+  { id:'raglan_road',       name:"Raglan Road Irish Pub",        loc:['springs'],   price:55, note:"Authentic Irish pub · live music & Irish dancers nightly" },
+  { id:'edison',            name:"The Edison",                   loc:['springs'],   price:60, note:"Industrial-gothic speakeasy · cabaret performances after 9 PM" },
+  { id:'house_blues',       name:"House of Blues",               loc:['springs'],   price:50, note:"Southern · live music venue · Sunday gospel brunch" },
+  { id:'splitsville',       name:"Splitsville Luxury Lanes",     loc:['springs'],   price:40, note:"Bowling alley + sushi/burgers · big-group friendly" },
+  { id:'chicken_guy',       name:"Chicken Guy!",                 loc:['springs'],   price:20, note:"Guy Fieri quick-service chicken tenders · 22 dipping sauces" },
+  { id:'jock_lindseys',     name:"Jock Lindsey's Hangar Bar",    loc:['springs'],   price:35, note:"Indiana Jones themed bar · small plates · waterfront seating" },
+  { id:'art_smith',         name:"Chef Art Smith's Homecomin'",  loc:['springs'],   price:55, note:"(same as Homecomin') · widely loved Southern" },
+
+  // ─── Universal Studios FL ───
+  { id:'lombards',          name:"Lombard's Seafood Grille",     loc:['usf'],       price:50, note:"Fisherman's wharf themed · seafood (great in a park)" },
+  { id:'mels',              name:"Mel's Drive-In",                loc:['usf'],       price:25, note:"American Graffiti diner · burgers, shakes" },
+  { id:'finnegans',         name:"Finnegan's Bar & Grill",       loc:['usf'],       price:45, note:"NYC themed Irish pub · shepherd's pie, fish & chips" },
+  { id:'leaky_cauldron',    name:"Leaky Cauldron",                loc:['usf'],       price:35, note:"Diagon Alley · British wizarding food · bangers & mash · Butterbeer" },
+  { id:'fast_food_blvd',    name:"Fast Food Blvd (Springfield)", loc:['usf'],       price:25, note:"Simpsons-themed quick service · Krusty Burger, Lard Lad donuts" },
+
+  // ─── Islands of Adventure ───
+  { id:'mythos_f',          name:"Mythos Restaurant",            loc:['ioa'],       price:55, note:"#1 theme park restaurant worldwide · volcano cave dining over lagoon" },
+  { id:'three_broomsticks', name:"Three Broomsticks",            loc:['ioa'],       price:35, note:"Hogsmeade · British pub fare · roast chicken · Butterbeer" },
+  { id:'confisco',          name:"Confisco Grille",              loc:['ioa'],       price:35, note:"Port of Entry · global menu · solid family pick" },
+  { id:'thunder_falls',     name:"Thunder Falls Terrace",        loc:['ioa'],       price:25, note:"Jurassic Park area · rotisserie chicken & ribs (great quick service)" },
+  { id:'green_eggs',        name:"Green Eggs and Ham Cafe",      loc:['ioa'],       price:20, note:"Seuss Landing · whimsical breakfast/lunch · big Seuss vibes" },
+
+  // ─── Epic Universe ───
+  { id:'toadstool',         name:"Toadstool Cafe",                loc:['eu'],        price:30, note:"Super Nintendo World · Mario-themed quick service · question-block tiramisu" },
+  { id:'pizza_moon',        name:"Pizza Moon",                    loc:['eu'],        price:25, note:"Mario area · pizzas (Yoshi's themed)" },
+  { id:'le_cirque_arcanus', name:"Le Cirque Arcanus",             loc:['eu'],        price:50, note:"Ministry of Magic area · French-themed wizarding meal" },
+  { id:'blue_dragon',       name:"The Blue Dragon",               loc:['eu'],        price:40, note:"How to Train Your Dragon area · pan-Asian · dragon themed" },
+  { id:'meteor_astropub',   name:"Meteor Astropub",               loc:['eu'],        price:45, note:"Celestial Park · cosmic-themed pub fare" },
+
+  // ─── Universal CityWalk ───
+  { id:'bigfire_f',         name:"Bigfire",                       loc:['citywalk'],  price:60, note:"Wood-fire American · upscale lakeside" },
+  { id:'toothsome',         name:"Toothsome Chocolate Emporium",  loc:['citywalk'],  price:45, note:"Steampunk chocolate factory themed · brunch+desserts famous" },
+  { id:'vivo',              name:"Vivo Italian Kitchen",          loc:['citywalk'],  price:45, note:"Italian · open kitchen · mid-range upscale" },
+  { id:'nbc_sports',        name:"NBC Sports Grill & Brew",       loc:['citywalk'],  price:40, note:"Sports bar · 100+ TVs · American" },
+  { id:'cowfish',           name:"The Cowfish",                   loc:['citywalk'],  price:40, note:"Sushi + burgers (yes, both) · creative & fun" },
+  { id:'hard_rock',         name:"Hard Rock Cafe",                loc:['citywalk'],  price:45, note:"Rock memorabilia · burgers/American · big atmosphere" },
+  { id:'margaritaville',    name:"Jimmy Buffett's Margaritaville",loc:['citywalk'],  price:45, note:"Caribbean/island vibe · live music · margaritas" },
+  { id:'bubba_gump',        name:"Bubba Gump Shrimp Co.",         loc:['citywalk'],  price:40, note:"Forrest Gump themed · shrimp specialties" },
+  { id:'antojitos',         name:"Antojitos Authentic Mexican",   loc:['citywalk'],  price:40, note:"Modern Mexican street food · live mariachi" },
+
+  // ─── Universal Resorts ───
+  { id:'bice',              name:"Bice Ristorante",               loc:['univ_resort'], price:75, note:"Portofino Bay · upscale Italian · best Italian on property" },
+  { id:'mama_dellas',       name:"Mama Della's",                  loc:['univ_resort'], price:55, note:"Portofino Bay · 'Sunday at Mama's house' Italian · cozy" },
+  { id:'palm',              name:"The Palm",                      loc:['univ_resort'], price:90, note:"Hard Rock Hotel · classic NYC steakhouse" },
+  { id:'jakes',             name:"Jake's American Bar",           loc:['univ_resort'], price:35, note:"Royal Pacific · casual American · burger menu" },
+  { id:'islands_dining',    name:"Islands Dining Room",           loc:['univ_resort'], price:50, note:"Royal Pacific · pan-Asian · also character breakfast" },
+  { id:'trattoria_porto',   name:"Trattoria del Porto",           loc:['univ_resort'], price:50, note:"Portofino Bay · casual Italian breakfast/lunch/dinner" },
+
+  // ─── I-Drive / Off-Property / Dinner Shows ───
+  { id:'medieval_f',        name:"Medieval Times",                loc:['idrive','citywalk','springs'], price:85, note:"Dinner show with jousting · 2 hr · cheer your color knight · BIG group friendly", isMedievalTimes:true },
+  { id:'fogo_f',            name:"Fogo de Chão",                  loc:['idrive'],    price:80, note:"Premium Brazilian churrascaria · upscale" },
+  { id:'texas_brazil_f',    name:"Texas de Brazil",               loc:['idrive'],    price:65, note:"Brazilian churrasco · more casual but great" },
+  { id:'yard_house',        name:"Yard House",                    loc:['idrive','citywalk'], price:35, note:"American · 130 beers on tap · big party-friendly" },
+  { id:'capital_grille',    name:"The Capital Grille",            loc:['idrive'],    price:95, note:"Upscale steakhouse on I-Drive · special occasion" },
+  { id:'ohana_breakfast',   name:"Ohana (breakfast version)",     loc:['mk_resort'], price:50, note:"Polynesian · Lilo & Stitch character breakfast" },
+];
+
+// Map day type → array of valid restaurant location codes
+const DAY_TO_LOCATIONS = {
+  disney_mk:    ['mk', 'mk_resort', 'springs'],
+  disney_epcot: ['epcot', 'epcot_resort', 'springs'],
+  disney_hs:    ['hs', 'epcot_resort', 'springs'],          // HS shares Boardwalk-area resorts
+  disney_ak:    ['ak', 'ak_resort', 'springs'],
+  pool_day:     ['springs', 'mk_resort', 'epcot_resort', 'ak_resort', 'idrive'],
+  rest_day:     ['springs', 'mk_resort', 'epcot_resort', 'ak_resort', 'idrive', 'citywalk'],
+  hotel_move:   ['springs', 'idrive', 'citywalk'],
+  girls_spa:    ['springs', 'idrive', 'mk_resort', 'epcot_resort'],
+  boys_arcade:  ['springs', 'idrive', 'citywalk'],
+  free:         ['mk','epcot','hs','ak','springs','usf','ioa','eu','citywalk','idrive','mk_resort','epcot_resort','ak_resort','univ_resort'],
+  swim_fish:    ['idrive', 'citywalk', 'springs'],
+  seaworld:     ['idrive', 'citywalk', 'springs'],
+  universal_usf:['usf', 'citywalk', 'univ_resort'],
+  universal_ioa:['ioa', 'citywalk', 'univ_resort'],
+  universal_eu: ['eu', 'citywalk', 'univ_resort'],
+};
+
+const LOC_LABELS = {
+  mk:           '🏰 Magic Kingdom (in-park)',
+  mk_resort:    '🏨 MK Area Resorts',
+  epcot:        '🌍 EPCOT (in-park / World Showcase)',
+  epcot_resort: '🏨 EPCOT Area Resorts (Boardwalk/Beach Club)',
+  hs:           '🎬 Hollywood Studios (in-park)',
+  ak:           '🦁 Animal Kingdom (in-park)',
+  ak_resort:    '🏨 AK Lodge',
+  springs:      '🛍️ Disney Springs',
+  usf:          '🎥 Universal Studios FL (in-park)',
+  ioa:          '🗺️ Islands of Adventure (in-park)',
+  eu:           '🌌 Epic Universe (in-park)',
+  citywalk:     '🌆 Universal CityWalk',
+  univ_resort:  '🏨 Universal Resorts (Portofino/Hard Rock/Royal Pacific)',
+  idrive:       '🛣️ I-Drive / Off-Property / Dinner Shows',
+};
+
+function getFamilyRestaurantsForDay(dayType) {
+  if (!dayType || dayType === 'tbd' || dayType === 'travel_in' || dayType === 'travel_out') {
+    return FAMILY_RESTAURANTS;
+  }
+  const allowed = DAY_TO_LOCATIONS[dayType];
+  if (!allowed) return FAMILY_RESTAURANTS;
+  return FAMILY_RESTAURANTS.filter(r => r.loc.some(l => allowed.includes(l)));
 }
 
 let dinnerRestaurants       = {}; // { dayIdx: restaurantId } — couples' private dinner restaurant
