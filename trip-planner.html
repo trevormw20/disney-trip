@@ -2450,20 +2450,57 @@ function dayCardHTML(i) {
           ${selectOptionsHTML(d.type)}
         </select>
         ${(d.type !== 'tbd' && d.type !== 'travel_in' && d.type !== 'travel_out') ? (() => {
-          const rests      = getRestaurantsForDay(d.type);
-          const selRestId  = dinnerRestaurants[i] || '';
-          const selRest    = DINNER_RESTAURANTS.find(r => r.id === selRestId);
-          const areaHint   = d.type.startsWith('disney_')    || d.type === 'pool_disney'  ? 'Disney-area' :
-                             d.type.startsWith('universal_') || d.type === 'pool_univ'    ? 'Universal-area' : 'All';
-          const coupleOpts = DINNER_COUPLES.map(c =>
+          const rests           = getRestaurantsForDay(d.type);
+          const selRestId       = dinnerRestaurants[i] || '';
+          const selRest         = DINNER_RESTAURANTS.find(r => r.id === selRestId);
+          const familyRestId    = familyDinnerRestaurants[i] || '';
+          const familyRest      = DINNER_RESTAURANTS.find(r => r.id === familyRestId);
+          const areaHint        = d.type.startsWith('disney_')    || d.type === 'pool_disney'  ? 'Disney-area' :
+                                  d.type.startsWith('universal_') || d.type === 'pool_univ'    ? 'Universal-area' : 'All';
+          const coupleOpts      = DINNER_COUPLES.map(c =>
             '<option value="' + c.id + '"' + ((dinnerSelections[i]||'') === c.id ? ' selected' : '') + '>' + c.label + '</option>'
           ).join('');
-          const restOpts   = rests.map(r =>
+          const restOpts        = rests.map(r =>
             '<option value="' + r.id + '"' + (selRestId === r.id ? ' selected' : '') + '>' + r.name + '  ·  ~$' + r.price + '/couple</option>'
           ).join('');
-          const restInfo   = selRest
+          const familyRestOpts  = rests.map(r =>
+            '<option value="' + r.id + '"' + (familyRestId === r.id ? ' selected' : '') + '>' + r.name + '  ·  ~$' + r.price + '/person</option>'
+          ).join('');
+          const restInfo        = selRest
             ? '<div class="dcb-rest-info">📍 ' + selRest.location + ' &nbsp;·&nbsp; 💰 ~$' + selRest.price + '/couple &nbsp;·&nbsp; ' + selRest.note + '</div>'
             : '';
+          const familyRestInfo  = familyRest
+            ? '<div class="dcb-rest-info" style="background:#f0fdf4;border-color:#86efac;">📍 ' + familyRest.location + ' &nbsp;·&nbsp; 💰 ~$' + familyRest.price + '/person &nbsp;·&nbsp; ' + familyRest.note + '</div>'
+            : '';
+
+          // ── Medieval Times upgrade panel (shown if MT picked in either row) ──
+          const isMtCouples = selRestId === 'medieval_times';
+          const isMtFamily  = familyRestId === 'medieval_times';
+          const showMt      = isMtCouples || isMtFamily;
+          let mtPanel = '';
+          if (showMt) {
+            const mtData       = medievalTimesData[i] || { royalty:false, knightingCount:0 };
+            const royaltyExtra = mtData.royalty ? 25 : 0;
+            const knightCost   = (mtData.knightingCount || 0) * 39;
+            const costPreview  = (royaltyExtra > 0 || knightCost > 0)
+              ? '+ $' + knightCost + ' knighting' + (royaltyExtra ? ' + $' + royaltyExtra + '/person royalty' : '')
+              : '';
+            mtPanel = '<div style="background:linear-gradient(135deg,#7c2d12,#b45309);color:#fff;border-radius:8px;padding:.55rem .7rem;margin-top:.4rem;font-size:.7rem;line-height:1.55;">' +
+              '<div style="font-weight:700;font-size:.74rem;margin-bottom:.35rem;letter-spacing:.4px;">⚔️ Medieval Times Add-Ons</div>' +
+              '<div style="opacity:.92;font-size:.66rem;margin-bottom:.4rem;">🍗 Best food: roasted chicken, garlic bread, tomato bisque · 🪑 Pre-show seating ~30 min early · color knight assigned by section</div>' +
+              '<label style="display:block;margin-bottom:.3rem;cursor:pointer;">' +
+                '<input type="checkbox"' + (mtData.royalty ? ' checked' : '') + ' onchange="setMedievalRoyalty(' + i + ',this.checked)" style="vertical-align:middle;margin-right:.3rem;"> ' +
+                '<strong>👑 Queen\'s Royalty Upgrade</strong> (~$25/person extra) — premium front-row seating, cheering banner, behind-the-scenes peek' +
+              '</label>' +
+              '<label style="display:block;cursor:pointer;">' +
+                '<strong>⚔️ Knighting Ceremony</strong> ($39 each) — # of people: ' +
+                '<input type="number" min="0" max="22" value="' + (mtData.knightingCount || 0) + '" oninput="setKnightingCount(' + i + ',this.value)" style="width:55px;padding:.15rem .35rem;border:none;border-radius:4px;font-size:.72rem;font-weight:700;color:#7c2d12;text-align:center;margin-left:.2rem;">' +
+                '<div style="font-size:.62rem;opacity:.85;margin-top:.2rem;">Be knighted on stage by the Queen during the show. Great for kids and guests of honor.</div>' +
+              '</label>' +
+              (costPreview ? '<div id="mt-cost-' + i + '" style="margin-top:.35rem;font-weight:700;font-size:.72rem;background:rgba(255,255,255,.18);padding:.25rem .55rem;border-radius:6px;display:inline-block;">' + costPreview + '</div>' : '<div id="mt-cost-' + i + '"></div>') +
+            '</div>';
+          }
+
           return '<div class="dcb-dinner-row">' +
             '<div class="dcb-dinner-label">💑 Couples\' Private Dinner</div>' +
             '<select class="dcb-select" style="border-color:#f9a8d4;font-size:.68rem;" onchange="setDayDinner(' + i + ',this.value)">' +
@@ -2472,7 +2509,14 @@ function dayCardHTML(i) {
             '<select class="dcb-select" style="border-color:#a5b4fc;font-size:.68rem;margin-top:.25rem;" onchange="setDayRestaurant(' + i + ',this.value)">' +
               '<option value="">— pick restaurant (' + areaHint + ' shown) —</option>' + restOpts +
             '</select>' +
-            restInfo + '</div>';
+            restInfo +
+            '<div class="dcb-dinner-label" style="margin-top:.55rem;color:#15803d;">🍽️ Family Dinner (everyone)</div>' +
+            '<select class="dcb-select" style="border-color:#86efac;font-size:.68rem;" onchange="setDayFamilyRestaurant(' + i + ',this.value)">' +
+              '<option value="">— pick family restaurant (optional) —</option>' + familyRestOpts +
+            '</select>' +
+            familyRestInfo +
+            mtPanel +
+          '</div>';
         })() : ''}
       </div>
     </div>`;
@@ -3457,6 +3501,12 @@ const DINNER_RESTAURANTS = [
     location:"I-Drive · ~15 min Disney · ~5 min Universal",
     price:140, note:"Unlimited churrasco & salad bar · more casual but great for couples",
     url:'https://www.texasdebrazil.com/locations/orlando/' },
+  // ── Dinner show — great family option ───────────────────────────────
+  { id:'medieval_times', name:"Medieval Times",        area:'both',
+    location:"Kissimmee · ~30 min Disney · ~45 min Universal",
+    price:85, note:"Dinner show with jousting · cheer for your color knight · best food: roasted chicken, garlic bread, tomato bisque · big-group friendly · 2 hr show",
+    url:'https://www.medievaltimes.com/orlando',
+    isMedievalTimes: true },
 ];
 
 // Returns filtered restaurants based on the day's park/location
@@ -3471,13 +3521,43 @@ function getRestaurantsForDay(dayType) {
   );
 }
 
-let dinnerRestaurants = {}; // { dayIdx: restaurantId }
+let dinnerRestaurants       = {}; // { dayIdx: restaurantId } — couples' private dinner restaurant
+let familyDinnerRestaurants = {}; // { dayIdx: restaurantId } — full-group family dinner
+let medievalTimesData       = {}; // { dayIdx: { royalty: bool, knightingCount: number } }
 
 function setDayRestaurant(dayIdx, restId) {
   if (restId) dinnerRestaurants[dayIdx] = restId;
   else delete dinnerRestaurants[dayIdx];
   saveState();
   renderDayGrid();
+}
+
+function setDayFamilyRestaurant(dayIdx, restId) {
+  if (restId) familyDinnerRestaurants[dayIdx] = restId;
+  else delete familyDinnerRestaurants[dayIdx];
+  saveState();
+  renderDayGrid();
+}
+
+function setMedievalRoyalty(dayIdx, val) {
+  if (!medievalTimesData[dayIdx]) medievalTimesData[dayIdx] = { royalty:false, knightingCount:0 };
+  medievalTimesData[dayIdx].royalty = !!val;
+  saveState();
+}
+
+function setKnightingCount(dayIdx, val) {
+  if (!medievalTimesData[dayIdx]) medievalTimesData[dayIdx] = { royalty:false, knightingCount:0 };
+  medievalTimesData[dayIdx].knightingCount = Math.max(0, parseInt(val) || 0);
+  // Update the cost preview in-place without full re-render
+  const previewEl = document.getElementById('mt-cost-' + dayIdx);
+  if (previewEl) {
+    const royaltyExtra = medievalTimesData[dayIdx].royalty ? 25 : 0;
+    const knightCost   = medievalTimesData[dayIdx].knightingCount * 39;
+    previewEl.textContent = (royaltyExtra > 0 || knightCost > 0)
+      ? '+ $' + (knightCost) + ' knighting' + (royaltyExtra ? ' + $' + royaltyExtra + '/person royalty' : '')
+      : '';
+  }
+  saveState();
 }
 
 // Dinner options — each couple/individual gets one special private dinner night
@@ -3510,6 +3590,8 @@ function saveState() {
       rideSelections: {...rideSelections},
       dinnerSelections: {...dinnerSelections},
       dinnerRestaurants: {...dinnerRestaurants},
+      familyDinnerRestaurants: {...familyDinnerRestaurants},
+      medievalTimesData: JSON.parse(JSON.stringify(medievalTimesData)),
       allowancePerDay: {...allowancePerDay},
       tripDate: document.getElementById('trip-date-input')?.value || '2029-11-01',
     };
@@ -3542,9 +3624,11 @@ function loadState() {
     if (s.extras) Object.assign(extras, s.extras);
     if (s.tylerHasBaby !== undefined) tylerHasBaby = s.tylerHasBaby;
     if (s.rideSelections) Object.assign(rideSelections, s.rideSelections);
-    if (s.dinnerSelections)  Object.assign(dinnerSelections,  s.dinnerSelections);
-    if (s.dinnerRestaurants) Object.assign(dinnerRestaurants, s.dinnerRestaurants);
-    if (s.allowancePerDay)   Object.assign(allowancePerDay,   s.allowancePerDay);
+    if (s.dinnerSelections)        Object.assign(dinnerSelections,        s.dinnerSelections);
+    if (s.dinnerRestaurants)       Object.assign(dinnerRestaurants,       s.dinnerRestaurants);
+    if (s.familyDinnerRestaurants) Object.assign(familyDinnerRestaurants, s.familyDinnerRestaurants);
+    if (s.medievalTimesData)       Object.assign(medievalTimesData,       s.medievalTimesData);
+    if (s.allowancePerDay)         Object.assign(allowancePerDay,         s.allowancePerDay);
     if (s.tripDate) window._savedTripDate = s.tripDate;
   } catch(e) { console.warn('State load failed:', e); }
 }
